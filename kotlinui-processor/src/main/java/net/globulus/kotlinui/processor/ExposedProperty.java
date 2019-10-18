@@ -12,6 +12,7 @@ public class ExposedProperty {
     public final String type;
     public final boolean mutable;
     public final List<Class<? extends Annotation>> annotations;
+    public final ClassName className;
 
     public ExposedProperty(String name,
                            String type,
@@ -21,6 +22,7 @@ public class ExposedProperty {
         this.type = type;
         this.mutable = mutable;
         this.annotations = annotations;
+        this.className = ClassName.bestGuess(type);
     }
 
     public PropertySpec.Builder toPropertySpecBuilder() {

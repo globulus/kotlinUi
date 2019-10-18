@@ -2,7 +2,6 @@ package net.globulus.kotlinui.processor;
 
 import com.squareup.kotlinpoet.ClassName;
 
-import net.globulus.kotlinui.annotation.FlavorInject;
 import net.globulus.kotlinui.annotation.KotlinUiConfig;
 import net.globulus.kotlinui.annotation.State;
 import net.globulus.kotlinui.processor.codegen.Input;
@@ -18,7 +17,6 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.annotation.processing.AbstractProcessor;
 import javax.annotation.processing.Filer;
@@ -152,42 +150,6 @@ public class Processor extends AbstractProcessor {
 			publicMethods.add(new ExposedMethod(enclosed, true));
 		}
 		return publicMethods;
-	}
-
-	private boolean isValidFlavorInject(Element element) {
-		if (element.getKind() != ElementKind.CONSTRUCTOR && element.getKind() != ElementKind.METHOD) {
-			ProcessorLog.error(element,
-					"Element %s is annotated with @%s but is not a constructor or a method." +
-							" Only constructors and methods are supported",
-					element.getSimpleName(), FlavorInject.class.getSimpleName());
-			return false;
-		}
-		if (element.getModifiers().contains(Modifier.STATIC) || element.getModifiers().contains(Modifier.FINAL)) {
-			ProcessorLog.error(element,
-					"Element %s is annotated with @%s but is final or static." +
-							" All methods must be non-static and open.",
-					element.getSimpleName(), FlavorInject.class.getSimpleName());
-			return false;
-		}
-		return true;
-	}
-
-	private boolean isValidFlavoredMethod(Element element) {
-		if (element.getKind() != ElementKind.METHOD) {
-			ProcessorLog.error(element,
-					"Element %s is annotated with @%s but is not a method." +
-							" Only methods are supported",
-					element.getSimpleName(), FlavorInject.class.getSimpleName());
-			return false;
-		}
-		if (element.getModifiers().contains(Modifier.STATIC) || element.getModifiers().contains(Modifier.PRIVATE)) {
-			ProcessorLog.error(element,
-					"Element %s is annotated with @%s but is private or static." +
-							" All methods must be non-static and non-private.",
-					element.getSimpleName(), FlavorInject.class.getSimpleName());
-			return false;
-		}
-		return true;
 	}
 
 	private boolean isValidKViewClass(Element element) {

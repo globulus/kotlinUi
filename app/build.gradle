@@ -36,8 +36,8 @@ dependencies {
     implementation "androidx.core:core-ktx:1.1.0"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation project(':demolib')
-    annotationProcessor project(':kotlinui-processor')
-    kapt project(':kotlinui-processor')
+//    annotationProcessor project(':kotlinui-processor')
+//    kapt project(':kotlinui-processor')
 }
 repositories {
     mavenCentral()

@@ -36,7 +36,7 @@ dependencies {
     implementation 'androidx.core:core-ktx:1.1.0'
     api project(':kotlinui')
     api project(':kotlinui-annotations')
-    api project(':kotlinui-processor')
-    annotationProcessor project(':kotlinui-processor')
-    kapt project(':kotlinui-processor')
+//    api project(':kotlinui-processor')
+//    annotationProcessor project(':kotlinui-processor')
+//    kapt project(':kotlinui-processor')
 }

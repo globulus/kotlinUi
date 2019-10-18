@@ -31,6 +31,7 @@ dependencies {
     implementation project(path: ':kotlinui-annotations')
     implementation 'com.squareup:kotlinpoet:1.4.0'
     implementation 'net.globulus.mmap:mmap:1.0.1'
+    compile "io.reactivex.rxjava3:rxjava:3.0.0-RC3"
 }
 
 sourceCompatibility = "1.8"

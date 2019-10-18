@@ -10,11 +10,31 @@ import android.widget.TextView
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.recyclerview.widget.RecyclerView
-import net.globulus.kotlinui.processor.util.FrameworkUtil
+import io.reactivex.rxjava3.functions.Consumer
+import io.reactivex.rxjava3.subjects.BehaviorSubject
+import kotlin.reflect.KProperty
 
 abstract class KView(val context: Context) {
 
+    val observables = mutableMapOf<String, BehaviorSubject<*>>()
+    val observers = mutableMapOf<String, MutableList<Consumer<*>>>()
+
     abstract val view: View
+
+    lateinit var id: String
+        private set
+    protected var viewCounter = 0
+    protected val viewMap = mutableMapOf<String, KView>()
+    var parent: KView? = null
+        protected set
+    val superParent: KView?
+        get() {
+            var p = parent
+            while (p?.parent != null) {
+                p = p.parent
+            }
+            return p
+        }
 
     protected open fun addView(v: View) { }
 
@@ -25,26 +45,24 @@ abstract class KView(val context: Context) {
 
     fun <V: KView> add(v: V): V {
         addView(v.view)
+        v.parent = this
+        v.id = v::class.java.simpleName + viewCounter
+        viewCounter += v.viewCounter + 1
+        viewMap[v.id] = v
+        viewMap.putAll(v.viewMap)
         return v
     }
 
-    fun text(@StringRes resId: Int): TextView {
-        return add(TextView(context).apply {
-            setText(resId)
-        })
+    fun text(@StringRes resId: Int): Text {
+        return add(Text(context, resId))
     }
 
-    fun button(@StringRes resId: Int, l: ((View) -> Unit)?): Button {
-        return add(Button(context).apply {
-            setText(resId)
-            setOnClickListener(l)
-        })
+    fun button(@StringRes resId: Int, l: ((View) -> Unit)?): KButton {
+        return add(KButton(context, resId, l))
     }
 
-    fun image(@DrawableRes resId: Int): ImageView {
-        return add(ImageView(context).apply {
-            setImageResource(resId)
-        })
+    fun image(@DrawableRes resId: Int): Image {
+        return add(Image(context, resId))
     }
 
     fun column(block: Column.() -> Unit): Column {
@@ -59,8 +77,20 @@ abstract class KView(val context: Context) {
         })
     }
 
-    fun triggerObserver(s: String) {
-        Log.e("AAAA", "Triggered observer $s")
+    fun <T> triggerObserver(key: String, value: T) {
+        Log.e("AAAA", "Triggered observer $key with $value")
+        (observables[key] as? BehaviorSubject<T>)?.let { observable ->
+            observers[key]?.let { observers ->
+                for (c in observers) {
+                    observable.subscribe(c as Consumer<T>)
+                }
+            }
+            observable.onNext(value)
+        }
+    }
+
+    fun <R> update(r: R) {
+        Log.e("AAAA", "UPDATE $r")
     }
 }
 
@@ -71,36 +101,58 @@ fun kview(context: Context, block: KView.() -> KView): View {
     }.view
 }
 
-@Suppress("UNCHECKED_CAST")
-inline fun <reified T: KView> T.bind(): T {
-    return Class.forName(T::class.java.name + FrameworkUtil.BOUND_SUFFIX)
-            .getConstructor(Context::class.java, T::class.java)
-            .newInstance(this.context, this) as T
-//    return Proxy.newProxyInstance(this::class.java.classLoader,
-//            arrayOf(this::class.java),
-//            StateInvocationHandler(this)
-//    ) as T
+//@Suppress("UNCHECKED_CAST")
+//inline fun <reified T: KView> T.bound(): T {
+//    return Class.forName(T::class.java.name + FrameworkUtil.BOUND_SUFFIX)
+//            .getConstructor(Context::class.java, T::class.java)
+//            .newInstance(this.context, this) as T
+//}
 
-//    val enhancer = Enhancer(context)
-//    enhancer.setSuperclass(KView::class.java)
-//
-//    enhancer.setInterceptor(object : MethodInterceptor {
-//        override fun intercept(proxy: Any?, args: Array<out Any>?, methodProxy: MethodProxy?): Any? {
-//            val instance = this@bind
-//            val method = methodProxy?.originalMethod
-//            val annotation = method?.getAnnotation(State::class.java)
-//            val result = method?.invoke(this, args)
-//            annotation?.let {
-//                instance.triggerObserver(method.name)
-//            }
-//            return if (result == instance)
-//                proxy
-//            else
-//                result
-//        }
-//    })
-//    return enhancer.create() as T
+fun <P: KView, T: KView, R> T.bindTo(parent: P, field: KProperty<R>): T {
+    val name = field.name
+    with(parent) {
+        if (observers[name] == null) {
+            observers[name] = mutableListOf()
+        }
+        observers[name]?.add(Consumer<R> {
+            update(it)
+        })
+    }
     return this
+}
+
+fun <T: KView, R> T.bindTo(field: KProperty<R>): T {
+    return bindTo(superParent ?: this, field)
+}
+
+fun <R: KView, T> R.state() = State<R, T>(this)
+
+class Text(context: Context, @StringRes resId: Int) : KView(context) {
+    private val tv = TextView(context).apply {
+        setText(resId)
+    }
+
+    override val view: View
+        get() = tv
+}
+
+class KButton(context: Context, @StringRes resId: Int, l: ((View) -> Unit)?) : KView(context) {
+    private val b = Button(context).apply {
+        setText(resId)
+        setOnClickListener(l)
+    }
+
+    override val view: View
+        get() = b
+}
+
+class Image(context: Context, @DrawableRes resId: Int) : KView(context) {
+    private val i = ImageView(context).apply {
+        setImageResource(resId)
+    }
+
+    override val view: View
+        get() = i
 }
 
 open class KLinearLayout(

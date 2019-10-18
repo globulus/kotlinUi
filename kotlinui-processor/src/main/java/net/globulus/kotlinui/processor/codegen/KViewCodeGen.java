@@ -15,6 +15,7 @@ import net.globulus.kotlinui.processor.util.ProcessorLog;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.stream.Collectors;
 
 import javax.annotation.processing.Filer;
 import javax.tools.FileObject;
@@ -26,6 +27,7 @@ public class KViewCodeGen {
     public void generate(Filer filer, ExposedClass clazz) {
         try {
             final String instance = "instance";
+            final String observables = "observables";
             String subclassName = clazz.name + "_Bound";
             String fileName = subclassName + ".kt";
             FileObject fo = filer.createResource(SOURCE_OUTPUT, clazz.packageName, fileName);
@@ -34,16 +36,23 @@ public class KViewCodeGen {
             ClassName subclass = new ClassName(clazz.packageName, subclassName);
 
             ClassName context = new ClassName("android.content", "Context");
+            ClassName behaviorSubject = new ClassName("io.reactivex.rxjava3.subjects", "BehaviorSubject");
+
+            FunSpec.Builder constrBuilder =  FunSpec.constructorBuilder()
+                    .addParameter("context", context)
+                    .addParameter(instance, originalClass);
+
+            for (ExposedProperty p : clazz.publicProperties.stream()
+                    .filter(p -> p.annotations.contains(State.class))
+                    .collect(Collectors.toList())) {
+                constrBuilder.addStatement("%L.%L[%S] = %T.create<%T>()", instance, observables,
+                        p.name, behaviorSubject, p.className);
+            }
 
             TypeSpec.Builder mainBuilder = TypeSpec.classBuilder(subclassName)
                     .superclass(originalClass)
                     .addSuperclassConstructorParameter("context")
-                    .primaryConstructor(
-                            FunSpec.constructorBuilder()
-                                    .addParameter("context", context)
-                                    .addParameter(instance, originalClass)
-                                    .build()
-                    )
+                    .primaryConstructor(constrBuilder.build())
                     .addProperty(PropertySpec
                             .builder(instance, originalClass, KModifier.PRIVATE)
                             .initializer(instance)
@@ -58,10 +67,10 @@ public class KViewCodeGen {
                                 .build());
                 if (p.mutable) {
                     FunSpec.Builder setterBuilder = FunSpec.setterBuilder()
-                            .addParameter("value", ClassName.bestGuess(p.type))
+                            .addParameter("value", p.className)
                             .addStatement("%L.%L = value", instance, p.name);
                     if (p.annotations.contains(State.class)) {
-                        setterBuilder.addStatement("%L.triggerObserver(%S)", instance, p.name);
+                        setterBuilder.addStatement("%L.triggerObserver(%S, value)", instance, p.name);
                     }
                     propBuilder.setter(setterBuilder.build());
                 }
