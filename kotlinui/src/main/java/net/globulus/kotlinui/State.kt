@@ -7,6 +7,7 @@ import kotlin.reflect.KProperty
 class State<in R: KView, T>(private val kview: R) : ReadWriteProperty<R, T?> {
 
     private var field: T? = null
+    private var updatedObservable = false
 
     override fun getValue(thisRef: R, property: KProperty<*>): T? {
         updateObservable(property)
@@ -20,9 +21,13 @@ class State<in R: KView, T>(private val kview: R) : ReadWriteProperty<R, T?> {
     }
 
     private fun updateObservable(property: KProperty<*>) {
+        if (updatedObservable) {
+            return
+        }
+        updatedObservable = true
         val name = property.name
         if (!kview.observables.containsKey(name)) {
-            kview.observables[name] = BehaviorSubject.create<T>()
+            kview.observables[name] = KView.Observable(BehaviorSubject.create<T>())
         }
     }
 }

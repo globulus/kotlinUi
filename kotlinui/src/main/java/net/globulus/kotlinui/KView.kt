@@ -16,7 +16,7 @@ import kotlin.reflect.KProperty
 
 abstract class KView(val context: Context) {
 
-    val observables = mutableMapOf<String, BehaviorSubject<*>>()
+    val observables = mutableMapOf<String, Observable<*>>()
     val observers = mutableMapOf<String, MutableList<Consumer<*>>>()
 
     abstract val view: View
@@ -79,19 +79,37 @@ abstract class KView(val context: Context) {
 
     fun <T> triggerObserver(key: String, value: T) {
         Log.e("AAAA", "Triggered observer $key with $value")
-        (observables[key] as? BehaviorSubject<T>)?.let { observable ->
-            observers[key]?.let { observers ->
-                for (c in observers) {
-                    observable.subscribe(c as Consumer<T>)
+        observables[key]?.let { observable ->
+            val bs = observable.behaviorSubject as BehaviorSubject<T>
+            if (!observable.bound) {
+                observable.bound = true
+                bindChildren()
+                observers[key]?.let { observers ->
+                    for (c in observers) {
+                        bs.subscribe(c as Consumer<T>)
+                    }
                 }
             }
-            observable.onNext(value)
+            bs.onNext(value)
         }
     }
 
-    fun <R> update(r: R) {
-        Log.e("AAAA", "UPDATE $r")
+    fun bindChildren(kviews: Collection<KView>? = null) {
+        val children = kviews ?: viewMap.values
+        for (child in children) {
+            observers.putAll(child.observers)
+            bindChildren(child.viewMap.values)
+        }
     }
+
+    open fun <R> update(r: R) {
+        Log.e("AAAA", "UPDATE on $this with $r")
+    }
+
+    data class Observable<T>(
+            val behaviorSubject: BehaviorSubject<T>,
+            var bound: Boolean = false
+    )
 }
 
 fun kview(context: Context, block: KView.() -> KView): View {
@@ -122,7 +140,7 @@ fun <P: KView, T: KView, R> T.bindTo(parent: P, field: KProperty<R>): T {
 }
 
 fun <T: KView, R> T.bindTo(field: KProperty<R>): T {
-    return bindTo(superParent ?: this, field)
+    return bindTo(this, field)
 }
 
 fun <R: KView, T> R.state() = State<R, T>(this)
@@ -134,6 +152,10 @@ class Text(context: Context, @StringRes resId: Int) : KView(context) {
 
     override val view: View
         get() = tv
+
+    override fun <R> update(r: R) {
+        tv.text = r.toString()
+    }
 }
 
 class KButton(context: Context, @StringRes resId: Int, l: ((View) -> Unit)?) : KView(context) {

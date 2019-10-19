@@ -5,6 +5,7 @@ import android.view.View
 import net.globulus.kotlinui.KView
 import net.globulus.kotlinui.bindTo
 import net.globulus.kotlinui.state
+import java.util.*
 
 class Kv(context: Context) : KView(context) {
 
@@ -12,9 +13,9 @@ class Kv(context: Context) : KView(context) {
 
     override val view: View
         get() = column {
-            text(R.string.label_1)
-            button(R.string.button_1) {
-            }.bindTo(this@Kv, ::buttonTitle)
-        }.view
-
+                text(R.string.label_1).bindTo(::buttonTitle)
+                button(R.string.button_1) {
+                    buttonTitle = Date().toString()
+                }
+            }.view
 }

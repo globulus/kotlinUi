@@ -22,6 +22,5 @@ class MainActivity : AppCompatActivity() {
 //            }
 //        }
         )
-        kv.buttonTitle = "Button title"
     }
 }
