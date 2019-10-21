@@ -3,6 +3,7 @@ package net.globulus.kotlinui.demo
 import android.content.Context
 import android.view.View
 import net.globulus.kotlinui.*
+import net.globulus.kotlinui.widgets.*
 import java.util.*
 
 class Kv(context: Context) : KView(context) {
