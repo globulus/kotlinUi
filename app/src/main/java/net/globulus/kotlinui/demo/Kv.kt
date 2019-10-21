@@ -3,15 +3,15 @@ package net.globulus.kotlinui.demo
 import android.content.Context
 import android.view.View
 import net.globulus.kotlinui.KView
-import net.globulus.kotlinui.StateList
 import net.globulus.kotlinui.bindTo
 import net.globulus.kotlinui.state
+import net.globulus.kotlinui.stateList
 import java.util.*
 
 class Kv(context: Context) : KView(context) {
 
     var buttonTitle: String by state()
-    val listItems = StateList(this, mutableListOf("A", "B", "C"), ::listItems)
+    val listItems = stateList(mutableListOf("A", "B", "C"), ::listItems)
 
     override val view: View
         get() = column {
@@ -20,8 +20,8 @@ class Kv(context: Context) : KView(context) {
                     buttonTitle = Date().toString()
                     listItems.add(buttonTitle)
                 }
-                list(listItems) {
+                list(::listItems) {
                     text(it)
-                }.bindTo(::listItems)
+                }
             }.view
 }

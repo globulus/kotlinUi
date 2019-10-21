@@ -88,6 +88,10 @@ abstract class KView(val context: Context) {
         return add(KList(context, data, renderer))
     }
 
+    fun <T> list(prop: KProperty<List<T>>, renderer: KView.(T) -> KView): KList<T> {
+        return add(KList(context, prop.getter.call(), renderer)).bindTo(prop)
+    }
+
     fun <T> triggerObserver(key: String, value: T) {
         Log.e("AAAA", "Triggered observer $key with $value")
         observables[key]?.let { observable ->
@@ -156,6 +160,8 @@ fun <T: KView, R> T.bindTo(field: KProperty<R>): T {
 
 fun <R: KView, T: Any> R.state() = NonNullState<R, T>(this)
 fun <R: KView, T> R.optionalState() = NullableState<R, T>(this)
+fun <D, R: KView, T: MutableList<D>> R.stateList(field: T, property: KProperty<*>)
+        = StateList(this, field, property)
 
 class Text(context: Context, @StringRes resId: Int, text: String? = null) : KView(context) {
     private val tv = TextView(context).apply {
