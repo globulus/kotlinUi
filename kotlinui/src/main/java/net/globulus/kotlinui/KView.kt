@@ -1,7 +1,6 @@
 package net.globulus.kotlinui
 
 import android.content.Context
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,6 +14,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.reactivex.rxjava3.functions.Consumer
 import io.reactivex.rxjava3.subjects.BehaviorSubject
+import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty
 
 abstract class KView(val context: Context) {
@@ -92,8 +92,23 @@ abstract class KView(val context: Context) {
         return add(KList(context, prop.getter.call(), renderer)).bindTo(prop)
     }
 
+    fun id(id: String): KView  {
+        val oldId = this.id
+        this.id = id
+        parent?.viewMap?.let {
+            it.remove(oldId)
+            it.put(id, this)
+        }
+        return this
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    fun <T: KView> id(prop: KMutableProperty<T>): T {
+        prop.setter.call(this)
+        return id(prop.name) as T
+    }
+
     fun <T> triggerObserver(key: String, value: T) {
-        Log.e("AAAA", "Triggered observer $key with $value")
         observables[key]?.let { observable ->
             val bs = observable.behaviorSubject as BehaviorSubject<T>
             if (!observable.bound) {
@@ -117,9 +132,7 @@ abstract class KView(val context: Context) {
         }
     }
 
-    open fun <R> update(r: R) {
-        Log.e("AAAA", "UPDATE on $this with $r")
-    }
+    open fun <R> update(r: R) { }
 
     data class Observable<T>(
             val behaviorSubject: BehaviorSubject<T>,
