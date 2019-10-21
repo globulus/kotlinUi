@@ -6,6 +6,7 @@ import android.widget.Button
 import androidx.annotation.StringRes
 import net.globulus.kotlinui.KView
 import net.globulus.kotlinui.bindTo
+import net.globulus.kotlinui.traits.TextContainer
 import kotlin.reflect.KProperty
 
 typealias OnClickListener = (View) -> Unit
@@ -15,7 +16,7 @@ class KButton(
         @StringRes resId: Int,
         text: String? = null,
         l: OnClickListener?
-) : KView(context) {
+) : KView(context), TextContainer<KButton> {
     private val b = Button(context).apply {
         if (resId == 0) {
             this.text = text
@@ -27,6 +28,26 @@ class KButton(
 
     override val view: View
         get() = b
+
+    override fun text(text: String?): KButton {
+        b.text = text
+        return this
+    }
+
+    override fun text(resId: Int): KButton {
+        b.setText(resId)
+        return this
+    }
+
+    override fun textSize(size: Float): KButton {
+        b.textSize = size
+        return this
+    }
+
+    override fun textColor(color: Int): KButton {
+        b.setTextColor(color)
+        return this
+    }
 }
 
 fun <T: KView> T.button(@StringRes resId: Int, l: OnClickListener?): KButton {

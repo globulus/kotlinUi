@@ -14,7 +14,11 @@ class Kv(context: Context) : KView(context) {
 
     override val view: View
         get() = column {
-                text(R.string.label_1).bindTo(::buttonTitle)
+                row {
+                    text("Current date is").textSize(22F)
+                    space()
+                    text(R.string.label_1).bindTo(::buttonTitle)
+                }
                 button(R.string.button_1) {
                     buttonTitle = Date().toString()
                     listItems.add(buttonTitle)

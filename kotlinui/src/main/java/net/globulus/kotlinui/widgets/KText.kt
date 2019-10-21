@@ -6,9 +6,15 @@ import android.widget.TextView
 import androidx.annotation.StringRes
 import net.globulus.kotlinui.KView
 import net.globulus.kotlinui.bindTo
+import net.globulus.kotlinui.traits.TextContainer
 import kotlin.reflect.KProperty
 
-class KText(context: Context, @StringRes resId: Int, text: String? = null) : KView(context) {
+class KText(
+        context: Context,
+        @StringRes resId: Int,
+        text: String? = null
+) : KView(context), TextContainer<KText> {
+
     private val tv = TextView(context).apply {
         if (resId != 0) {
             setText(resId)
@@ -22,6 +28,26 @@ class KText(context: Context, @StringRes resId: Int, text: String? = null) : KVi
 
     override fun <R> update(r: R) {
         tv.text = r.toString()
+    }
+
+    override fun text(text: String?): KText {
+        tv.text = text
+        return this
+    }
+
+    override fun text(resId: Int): KText {
+        tv.setText(resId)
+        return this
+    }
+
+    override fun textSize(size: Float): KText {
+        tv.textSize = size
+        return this
+    }
+
+    override fun textColor(color: Int): KText {
+        tv.setTextColor(color)
+        return this
     }
 }
 
