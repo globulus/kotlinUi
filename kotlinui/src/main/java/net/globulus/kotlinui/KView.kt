@@ -2,13 +2,16 @@ package net.globulus.kotlinui
 
 import android.content.Context
 import android.util.Log
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import io.reactivex.rxjava3.functions.Consumer
 import io.reactivex.rxjava3.subjects.BehaviorSubject
@@ -57,6 +60,10 @@ abstract class KView(val context: Context) {
         return add(Text(context, resId))
     }
 
+    fun text(text: String? = null): Text {
+        return add(Text(context, 0, text))
+    }
+
     fun button(@StringRes resId: Int, l: ((View) -> Unit)?): KButton {
         return add(KButton(context, resId, l))
     }
@@ -75,6 +82,10 @@ abstract class KView(val context: Context) {
         return add(Row(context).apply {
             block()
         })
+    }
+
+    fun <T> list(data: List<T>, renderer: KView.(T) -> KView): KList<T> {
+        return add(KList(context, data, renderer))
     }
 
     fun <T> triggerObserver(key: String, value: T) {
@@ -143,11 +154,16 @@ fun <T: KView, R> T.bindTo(field: KProperty<R>): T {
     return bindTo(this, field)
 }
 
-fun <R: KView, T> R.state() = State<R, T>(this)
+fun <R: KView, T: Any> R.state() = NonNullState<R, T>(this)
+fun <R: KView, T> R.optionalState() = NullableState<R, T>(this)
 
-class Text(context: Context, @StringRes resId: Int) : KView(context) {
+class Text(context: Context, @StringRes resId: Int, text: String? = null) : KView(context) {
     private val tv = TextView(context).apply {
-        setText(resId)
+        if (resId != 0) {
+            setText(resId)
+        } else {
+            this.text = text
+        }
     }
 
     override val view: View
@@ -197,29 +213,42 @@ class Column(context: Context) : KLinearLayout(context, LinearLayout.VERTICAL)
 
 class Row(context: Context) : KLinearLayout(context, LinearLayout.HORIZONTAL)
 
-class KList<T>(context: Context, data: List<T>, renderer: (T) -> KView) {
+class KList<T>(context: Context, data: List<T>, renderer: KView.(T) -> KView) : KView(context) {
 
     private val rv = RecyclerView(context).apply {
-//        adapter = object : RecyclerView.Adapter<ViewHolder>() {
-//
-//            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-//                return ViewHolder(ViewStub(context))
-//            }
-//
-//            override fun getItemCount(): Int {
-//                TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-//            }
-//
-//            override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-//                TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-//            }
-//
-//        }
+        layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        layoutManager = LinearLayoutManager(context)
+        adapter = object : RecyclerView.Adapter<ViewHolder>() {
+
+            override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
+                return ViewHolder(LayoutInflater.from(context)
+                        .inflate(R.layout.item_list, parent, false))
+            }
+
+            override fun getItemCount(): Int {
+                return data.size
+            }
+
+            override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+                with(holder.itemView as ViewGroup) {
+                    removeAllViews()
+                    val view = object : KView(context) {
+                        override val view: View
+                            get() = renderer(data[position]).view
+                    }.view
+//                    (view.parent as? ViewGroup)?.removeView(view)
+                    addView(view)
+                }
+            }
+        }
     }
 
-    private inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        private fun bind(item: T) {
-//            itemView =
-        }
+    private class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
+
+    override val view: View
+        get() = rv
+
+    override fun <R> update(r: R) {
+        rv.adapter?.notifyDataSetChanged()
     }
 }

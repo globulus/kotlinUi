@@ -4,10 +4,12 @@ import io.reactivex.rxjava3.subjects.BehaviorSubject
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-class State<in R: KView, T>(private val kview: R) : ReadWriteProperty<R, T?> {
+interface State<R: KView, T> : ReadWriteProperty<R, T>, UpdatesObservable<R, T>
+
+class NullableState<R: KView, T>(override val kview: R) : State<R, T?> {
 
     private var field: T? = null
-    private var updatedObservable = false
+    override var updatedObservable = false
 
     override fun getValue(thisRef: R, property: KProperty<*>): T? {
         updateObservable(property)
@@ -19,8 +21,35 @@ class State<in R: KView, T>(private val kview: R) : ReadWriteProperty<R, T?> {
         field = value
         kview.triggerObserver(property.name, field)
     }
+}
 
-    private fun updateObservable(property: KProperty<*>) {
+class NonNullState<R: KView, T: Any>(override val kview: R) : State<R, T> {
+
+    private lateinit var field: T
+    override var updatedObservable = false
+
+    constructor(kview: R, initialValue: T) : this(kview) {
+        field = initialValue
+    }
+
+    override fun getValue(thisRef: R, property: KProperty<*>): T {
+        updateObservable(property)
+        return field
+    }
+
+    override fun setValue(thisRef: R, property: KProperty<*>, value: T) {
+        updateObservable(property)
+        field = value
+        kview.triggerObserver(property.name, field)
+    }
+}
+
+interface UpdatesObservable<R: KView, T> {
+
+    val kview: R
+    var updatedObservable: Boolean
+
+    fun updateObservable(property: KProperty<*>) {
         if (updatedObservable) {
             return
         }
