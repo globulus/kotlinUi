@@ -98,12 +98,14 @@ abstract class KView(val context: Context) {
     )
 }
 
-fun kview(context: Context, block: KView.() -> KView): View {
+fun kview(context: Context, block: KView.() -> KView): KView {
     return object : KView(context) {
         override val view: View
             get() = block().view
-    }.view
+    }
 }
+
+fun kview_(context: Context, block: KView.() -> KView) = kview(context, block)
 
 //@Suppress("UNCHECKED_CAST")
 //inline fun <reified T: KView> T.bound(): T {
@@ -151,6 +153,7 @@ fun <T: KView> T.id(prop: KMutableProperty<T>): T {
 }
 
 fun <R: KView, T: Any> R.state() = NonNullState<R, T>(this)
+fun <R: KView, T: Any> R.state(initialValue: T) = NonNullState(this, initialValue)
 fun <R: KView, T> R.optionalState() = NullableState<R, T>(this)
 fun <D, R: KView, T: MutableList<D>> R.stateList(field: T, property: KProperty<*>)
         = StateList(this, field, property)
@@ -184,10 +187,26 @@ fun <T: KView> T.margins(m: Int): T {
     return margins(m, m, m, m)
 }
 
+fun <T: KView> T.visible(visibility: Int): T {
+    return apply {
+        view.visibility = visibility
+    }
+}
+
+fun <T: KView> T.visible(visible: Boolean): T {
+    return apply {
+        view.visibility = if (visible) View.VISIBLE else View.GONE
+    }
+}
+
 typealias OnClickListener = (View) -> Unit
 
 fun <T: KView> T.onClickListener(l: OnClickListener?): T {
     return apply {
         view.setOnClickListener(l)
     }
+}
+
+fun <T: KView> T.emptyView() = object : KView(context) {
+    override val view = View(context)
 }

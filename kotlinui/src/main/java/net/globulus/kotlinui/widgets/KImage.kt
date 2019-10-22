@@ -7,12 +7,19 @@ import androidx.annotation.DrawableRes
 import net.globulus.kotlinui.KView
 
 class KImage(context: Context, @DrawableRes resId: Int) : KView(context) {
+
     private val i = ImageView(context).apply {
         setImageResource(resId)
     }
 
     override val view: View
         get() = i
+
+    var imageRes: Int = resId
+        set(value) {
+            field = value
+            i.setImageResource(value)
+        }
 }
 
 fun <T: KView> T.image(@DrawableRes resId: Int): KImage {
