@@ -2,7 +2,7 @@ package net.globulus.kotlinui
 
 import kotlin.reflect.KProperty
 
-open class StateCollection<D, R: KView, T: MutableCollection<D>>(
+open class StateCollection<D, R: KView<*>, T: MutableCollection<D>>(
         override val kview: R,
         protected val field: T,
         private val property: KProperty<*>
@@ -70,7 +70,7 @@ open class StateCollection<D, R: KView, T: MutableCollection<D>>(
     }
 }
 
-class StateList<D, R: KView, T: MutableList<D>>(
+class StateList<D, R: KView<*>, T: MutableList<D>>(
         kview: R,
         field: T,
         property: KProperty<*>

@@ -9,21 +9,21 @@ import io.reactivex.rxjava3.subjects.BehaviorSubject
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty
 
-abstract class KView(val context: Context) {
+abstract class KView<V: View>(val context: Context) {
 
     val observables = mutableMapOf<String, Observable<*>>()
     val observers = mutableMapOf<String, MutableList<Consumer<*>>>()
     val boundWriteProperties = mutableMapOf<String, MutableList<KMutableProperty<*>>>()
 
-    abstract val view: View
+    abstract val view: V
 
     lateinit var id: String
         private set
     protected var viewCounter = 0
-    protected val viewMap = mutableMapOf<String, KView>()
-    var parent: KView? = null
+    protected val viewMap = mutableMapOf<String, KView<*>>()
+    var parent: KView<*>? = null
         protected set
-    val superParent: KView?
+    val superParent: KView<*>?
         get() {
             var p = parent
             while (p?.parent != null) {
@@ -34,12 +34,12 @@ abstract class KView(val context: Context) {
 
     protected open fun addView(v: View) { }
 
-    fun <V: View> add(v: V): V {
+    fun <T: View> add(v: T): T {
         addView(v)
         return v
     }
 
-    fun <V: KView> add(v: V): V {
+    fun <T: KView<*>> add(v: T): T {
         addView(v.view)
         v.parent = this
         v.id = v::class.java.simpleName + viewCounter
@@ -49,7 +49,7 @@ abstract class KView(val context: Context) {
         return v
     }
 
-    fun id(id: String): KView  {
+    fun id(id: String): KView<V>  {
         val oldId = this.id
         this.id = id
         parent?.viewMap?.let {
@@ -76,7 +76,7 @@ abstract class KView(val context: Context) {
         }
     }
 
-    fun bindChildren(kviews: Collection<KView>? = null) {
+    fun bindChildren(kviews: Collection<KView<*>>? = null) {
         val children = kviews ?: viewMap.values
         for (child in children) {
             observers.putAll(child.observers)
@@ -98,14 +98,19 @@ abstract class KView(val context: Context) {
     )
 }
 
-fun kview(context: Context, block: KView.() -> KView): KView {
-    return object : KView(context) {
-        override val view: View
+fun <V: View> kview(context: Context, block: KView<V>.() -> KView<V>): KView<V> {
+    return object : KView<V>(context) {
+        override val view: V
             get() = block().view
     }
 }
 
-fun kview_(context: Context, block: KView.() -> KView) = kview(context, block)
+fun <V: View> kview_(context: Context, block: KView<V>.() -> KView<V>) = kview(context, block)
+
+fun <V:View, T: KView<V>> T.applyOnView(block: V.() -> Unit): T {
+    this.view.apply(block)
+    return this
+}
 
 //@Suppress("UNCHECKED_CAST")
 //inline fun <reified T: KView> T.bound(): T {
@@ -114,7 +119,7 @@ fun kview_(context: Context, block: KView.() -> KView) = kview(context, block)
 //            .newInstance(this.context, this) as T
 //}
 
-fun <P: KView, T: KView, R> T.bindTo(parent: P, field: KProperty<R>): T {
+fun <P: KView<*>, T: KView<*>, R> T.bindTo(parent: P, field: KProperty<R>): T {
     val name = field.name
     with(parent) {
         if (observers[name] == null) {
@@ -127,11 +132,11 @@ fun <P: KView, T: KView, R> T.bindTo(parent: P, field: KProperty<R>): T {
     return this
 }
 
-fun <T: KView, R> T.bindTo(field: KProperty<R>): T {
+fun <T: KView<*>, R> T.bindTo(field: KProperty<R>): T {
     return bindTo(this, field)
 }
 
-inline fun <T: KView, reified R> T.bind(field: KMutableProperty<R>): T {
+inline fun <T: KView<*>, reified R> T.bind(field: KMutableProperty<R>): T {
     val name = R::class.java.name
     if (!boundWriteProperties.containsKey(name)) {
         boundWriteProperties[name] = mutableListOf()
@@ -140,41 +145,35 @@ inline fun <T: KView, reified R> T.bind(field: KMutableProperty<R>): T {
     return this
 }
 
-inline fun <T: KView, reified R> T.bindBoth(field: KMutableProperty<R>): T {
-    bindTo(field)
-    bind(field)
-    return this
-}
-
 @Suppress("UNCHECKED_CAST")
-fun <T: KView> T.id(prop: KMutableProperty<T>): T {
+fun <T: KView<*>> T.id(prop: KMutableProperty<T>): T {
     prop.setter.call(this)
     return id(prop.name) as T
 }
 
-fun <R: KView, T: Any> R.state() = NonNullState<R, T>(this)
-fun <R: KView, T: Any> R.state(initialValue: T) = NonNullState(this, initialValue)
-fun <R: KView, T> R.optionalState() = NullableState<R, T>(this)
-fun <D, R: KView, T: MutableList<D>> R.stateList(field: T, property: KProperty<*>)
+fun <R: KView<*>, T: Any> R.state() = NonNullState<R, T>(this)
+fun <R: KView<*>, T: Any> R.state(initialValue: T) = NonNullState(this, initialValue)
+fun <R: KView<*>, T> R.optionalState() = NullableState<R, T>(this)
+fun <D, R: KView<*>, T: MutableList<D>> R.stateList(field: T, property: KProperty<*>)
         = StateList(this, field, property)
 
-fun <T: KView> T.frame(width: Int, height: Int): T {
+fun <T: KView<*>> T.frame(width: Int, height: Int): T {
     return apply {
         view.layoutParams = LinearLayout.LayoutParams(width, height)
     }
 }
 
-fun <T: KView> T.padding(left: Int, top: Int, right: Int, bottom: Int): T {
+fun <T: KView<*>> T.padding(left: Int, top: Int, right: Int, bottom: Int): T {
     return apply {
         view.setPadding(left, top, right, bottom)
     }
 }
 
-fun <T: KView> T.padding(p: Int): T {
+fun <T: KView<*>> T.padding(p: Int): T {
     return padding(p, p, p, p)
 }
 
-fun <T: KView> T.margins(left: Int, top: Int, right: Int, bottom: Int): T {
+fun <T: KView<*>> T.margins(left: Int, top: Int, right: Int, bottom: Int): T {
     return apply {
         (view.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
             it.setMargins(left, top, right, bottom)
@@ -183,17 +182,17 @@ fun <T: KView> T.margins(left: Int, top: Int, right: Int, bottom: Int): T {
     }
 }
 
-fun <T: KView> T.margins(m: Int): T {
+fun <T: KView<*>> T.margins(m: Int): T {
     return margins(m, m, m, m)
 }
 
-fun <T: KView> T.visible(visibility: Int): T {
+fun <T: KView<*>> T.visible(visibility: Int): T {
     return apply {
         view.visibility = visibility
     }
 }
 
-fun <T: KView> T.visible(visible: Boolean): T {
+fun <T: KView<*>> T.visible(visible: Boolean): T {
     return apply {
         view.visibility = if (visible) View.VISIBLE else View.GONE
     }
@@ -201,12 +200,12 @@ fun <T: KView> T.visible(visible: Boolean): T {
 
 typealias OnClickListener = (View) -> Unit
 
-fun <T: KView> T.onClickListener(l: OnClickListener?): T {
+fun <T: KView<*>> T.onClickListener(l: OnClickListener?): T {
     return apply {
         view.setOnClickListener(l)
     }
 }
 
-fun <T: KView> T.emptyView() = object : KView(context) {
+fun <T: KView<*>> T.emptyView() = object : KView<View>(context) {
     override val view = View(context)
 }

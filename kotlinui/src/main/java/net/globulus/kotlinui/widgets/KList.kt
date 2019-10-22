@@ -11,18 +11,13 @@ import net.globulus.kotlinui.R
 import net.globulus.kotlinui.bindTo
 import kotlin.reflect.KProperty
 
-typealias ListRenderer<T> = KView.(T) -> KView
+typealias ListRenderer<T> = KView<RecyclerView>.(T) -> KView<*>
 typealias RowProducer<T> = () -> KList.Row<T>
 
-class KList<T>(context: Context) : KView(context) {
-
-    private val rv = RecyclerView(context).apply {
-        layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-        layoutManager = LinearLayoutManager(context)
-    }
+class KList<T>(context: Context) : KView<RecyclerView>(context) {
 
     constructor(context: Context, data: List<T>, renderer: ListRenderer<T>) : this(context) {
-        rv.adapter = object : RecyclerView.Adapter<ViewHolder>() {
+        view.adapter = object : RecyclerView.Adapter<ViewHolder>() {
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
                 return ViewHolder(LayoutInflater.from(context)
                         .inflate(R.layout.item_list, parent, false))
@@ -35,9 +30,8 @@ class KList<T>(context: Context) : KView(context) {
             override fun onBindViewHolder(holder: ViewHolder, position: Int) {
                 with(holder.itemView as ViewGroup) {
                     removeAllViews()
-                    val view = object : KView(context) {
-                        override val view: View
-                            get() = renderer(data[position]).view
+                    val view = object : KView<View>(context) {
+                        override val view = renderer(data[position]).view
                     }.view
 //                    (view.parent as? ViewGroup)?.removeView(view)
                     addView(view)
@@ -47,7 +41,7 @@ class KList<T>(context: Context) : KView(context) {
     }
 
     constructor(context: Context, data: List<T>, rowProducer: RowProducer<T>) : this(context) {
-        rv.adapter = object : RecyclerView.Adapter<ViewHolder>() {
+        view.adapter = object : RecyclerView.Adapter<ViewHolder>() {
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
                 val row = rowProducer()
                 return ViewHolder(row.kview.view, row)
@@ -65,33 +59,35 @@ class KList<T>(context: Context) : KView(context) {
         }
     }
 
-    override val view: View
-        get() = rv
+    override val view = RecyclerView(context).apply {
+        layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        layoutManager = LinearLayoutManager(context)
+    }
 
     override fun <R> updateValue(r: R) {
-        rv.adapter?.notifyDataSetChanged()
+        view.adapter?.notifyDataSetChanged()
     }
 
     class ViewHolder(itemView: View, internal vararg val args: Any) : RecyclerView.ViewHolder(itemView)
 
     abstract class Row<D> {
-       abstract val kview: KView
+       abstract val kview: KView<*>
        abstract fun bind(data: D)
     }
 }
 
-fun <T: KView, D> T.list(data: List<D>, renderer: ListRenderer<D>): KList<D> {
+fun <T: KView<*>, D> T.list(data: List<D>, renderer: ListRenderer<D>): KList<D> {
     return add(KList(context, data, renderer))
 }
 
-fun <T: KView, D> T.list(prop: KProperty<List<D>>, renderer: ListRenderer<D>): KList<D> {
+fun <T: KView<*>, D> T.list(prop: KProperty<List<D>>, renderer: ListRenderer<D>): KList<D> {
     return add(KList(context, prop.getter.call(), renderer)).bindTo(prop)
 }
 
-fun <T: KView, D> T.recycledList(data: List<D>, rowProducer: RowProducer<D>): KList<D> {
+fun <T: KView<*>, D> T.recycledList(data: List<D>, rowProducer: RowProducer<D>): KList<D> {
     return add(KList(context, data, rowProducer))
 }
 
-fun <T: KView, D> T.recycledList(prop: KProperty<List<D>>, rowProducer: RowProducer<D>): KList<D> {
+fun <T: KView<*>, D> T.recycledList(prop: KProperty<List<D>>, rowProducer: RowProducer<D>): KList<D> {
     return add(KList(context, prop.getter.call(), rowProducer)).bindTo(prop)
 }

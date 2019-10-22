@@ -6,7 +6,7 @@ import net.globulus.kotlinui.*
 import net.globulus.kotlinui.widgets.*
 import java.util.*
 
-class Kv(context: Context) : KView(context) {
+class Kv(context: Context) : KView<View>(context) {
 
     lateinit var goButton: KButton
     var buttonTitle: String by state()

@@ -8,7 +8,7 @@ import net.globulus.kotlinui.widgets.checkBox
 import net.globulus.kotlinui.widgets.column
 import net.globulus.kotlinui.widgets.list
 
-class LandmarkList(context: Context, private val data: List<Landmark>) : KView(context) {
+class LandmarkList(context: Context, private val data: List<Landmark>) : KView<View>(context) {
     
     var showFavorites: Boolean by state(false)
 

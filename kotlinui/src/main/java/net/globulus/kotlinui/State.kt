@@ -4,9 +4,9 @@ import io.reactivex.rxjava3.subjects.BehaviorSubject
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-interface State<R: KView, T> : ReadWriteProperty<R, T>, UpdatesObservable<R, T>
+interface State<R: KView<*>, T> : ReadWriteProperty<R, T>, UpdatesObservable<R, T>
 
-class NullableState<R: KView, T>(override val kview: R) : State<R, T?> {
+class NullableState<R: KView<*>, T>(override val kview: R) : State<R, T?> {
 
     private var field: T? = null
     override var updatedObservable = false
@@ -23,7 +23,7 @@ class NullableState<R: KView, T>(override val kview: R) : State<R, T?> {
     }
 }
 
-class NonNullState<R: KView, T: Any>(override val kview: R) : State<R, T> {
+class NonNullState<R: KView<*>, T: Any>(override val kview: R) : State<R, T> {
 
     private lateinit var field: T
     override var updatedObservable = false
@@ -44,7 +44,7 @@ class NonNullState<R: KView, T: Any>(override val kview: R) : State<R, T> {
     }
 }
 
-interface UpdatesObservable<R: KView, T> {
+interface UpdatesObservable<R: KView<*>, T> {
 
     val kview: R
     var updatedObservable: Boolean

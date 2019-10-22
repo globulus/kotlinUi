@@ -6,17 +6,14 @@ import android.widget.LinearLayout
 import android.widget.Space
 import net.globulus.kotlinui.KView
 
-open class KStack(context: Context, o: Int) : KView(context) {
+open class KStack(context: Context, o: Int) : KView<LinearLayout>(context) {
 
-    internal val ll = LinearLayout(context).apply {
+    override val view= LinearLayout(context).apply {
         orientation = o
     }
 
-    override val view: View
-        get() = ll
-
     override fun addView(v: View) {
-        ll.addView(v)
+        view.addView(v)
     }
 }
 
@@ -25,19 +22,21 @@ class Column(context: Context) : KStack(context, LinearLayout.VERTICAL)
 class Row(context: Context) : KStack(context, LinearLayout.HORIZONTAL)
 
 fun <T: KStack> T.space(): T {
-    ll.addView(Space(context).apply {
-        layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1F)
+    val width = if (Column::class.java.isAssignableFrom(this::class.java)) LinearLayout.LayoutParams.MATCH_PARENT else 0
+    val height = if (Row::class.java.isAssignableFrom(this::class.java)) LinearLayout.LayoutParams.MATCH_PARENT else 0
+    view.addView(Space(context).apply {
+        layoutParams = LinearLayout.LayoutParams(width, height, 1F)
     })
     return this
 }
 
-fun <T: KView> T.column(block: Column.() -> Unit): Column {
+fun <T: KView<*>> T.column(block: Column.() -> Unit): Column {
     return add(Column(context).apply {
         block()
     })
 }
 
-fun <T: KView> T.row(block: Row.() -> Unit): Row {
+fun <T: KView<*>> T.row(block: Row.() -> Unit): Row {
     return add(Row(context).apply {
         block()
     })
