@@ -46,7 +46,7 @@ class KList<T>(context: Context, data: List<T>, renderer: KView.(T) -> KView) : 
     override val view: View
         get() = rv
 
-    override fun <R> update(r: R) {
+    override fun <R> updateValue(r: R) {
         rv.adapter?.notifyDataSetChanged()
     }
 }

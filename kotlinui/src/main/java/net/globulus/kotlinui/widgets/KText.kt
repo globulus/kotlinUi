@@ -26,7 +26,7 @@ class KText(
     override val view: View
         get() = tv
 
-    override fun <R> update(r: R) {
+    override fun <R> updateValue(r: R) {
         tv.text = r.toString()
     }
 

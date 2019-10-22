@@ -5,11 +5,10 @@ import android.view.View
 import android.widget.Button
 import androidx.annotation.StringRes
 import net.globulus.kotlinui.KView
+import net.globulus.kotlinui.OnClickListener
 import net.globulus.kotlinui.bindTo
 import net.globulus.kotlinui.traits.TextContainer
 import kotlin.reflect.KProperty
-
-typealias OnClickListener = (View) -> Unit
 
 class KButton(
         context: Context,
@@ -28,6 +27,10 @@ class KButton(
 
     override val view: View
         get() = b
+
+    override fun <R> updateValue(r: R) {
+        b.text = r.toString()
+    }
 
     override fun text(text: String?): KButton {
         b.text = text

@@ -2,6 +2,8 @@ package net.globulus.kotlinui
 
 import android.content.Context
 import android.view.View
+import android.view.ViewGroup
+import android.widget.LinearLayout
 import io.reactivex.rxjava3.functions.Consumer
 import io.reactivex.rxjava3.subjects.BehaviorSubject
 import kotlin.reflect.KMutableProperty
@@ -11,6 +13,7 @@ abstract class KView(val context: Context) {
 
     val observables = mutableMapOf<String, Observable<*>>()
     val observers = mutableMapOf<String, MutableList<Consumer<*>>>()
+    val boundWriteProperties = mutableMapOf<String, MutableList<KMutableProperty<*>>>()
 
     abstract val view: View
 
@@ -81,7 +84,13 @@ abstract class KView(val context: Context) {
         }
     }
 
-    open fun <R> update(r: R) { }
+    protected inline fun <reified R> notifyWriteProperties(value: R) {
+        boundWriteProperties[R::class.java.name]?.forEach {
+            it.setter.call(value)
+        }
+    }
+
+    open fun <R> updateValue(r: R) { }
 
     data class Observable<T>(
             val behaviorSubject: BehaviorSubject<T>,
@@ -110,7 +119,7 @@ fun <P: KView, T: KView, R> T.bindTo(parent: P, field: KProperty<R>): T {
             observers[name] = mutableListOf()
         }
         observers[name]?.add(Consumer<R> {
-            update(it)
+            updateValue(it)
         })
     }
     return this
@@ -118,6 +127,21 @@ fun <P: KView, T: KView, R> T.bindTo(parent: P, field: KProperty<R>): T {
 
 fun <T: KView, R> T.bindTo(field: KProperty<R>): T {
     return bindTo(this, field)
+}
+
+inline fun <T: KView, reified R> T.bind(field: KMutableProperty<R>): T {
+    val name = R::class.java.name
+    if (!boundWriteProperties.containsKey(name)) {
+        boundWriteProperties[name] = mutableListOf()
+    }
+    boundWriteProperties[name]?.add(field)
+    return this
+}
+
+inline fun <T: KView, reified R> T.bindBoth(field: KMutableProperty<R>): T {
+    bindTo(field)
+    bind(field)
+    return this
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -130,3 +154,40 @@ fun <R: KView, T: Any> R.state() = NonNullState<R, T>(this)
 fun <R: KView, T> R.optionalState() = NullableState<R, T>(this)
 fun <D, R: KView, T: MutableList<D>> R.stateList(field: T, property: KProperty<*>)
         = StateList(this, field, property)
+
+fun <T: KView> T.frame(width: Int, height: Int): T {
+    return apply {
+        view.layoutParams = LinearLayout.LayoutParams(width, height)
+    }
+}
+
+fun <T: KView> T.padding(left: Int, top: Int, right: Int, bottom: Int): T {
+    return apply {
+        view.setPadding(left, top, right, bottom)
+    }
+}
+
+fun <T: KView> T.padding(p: Int): T {
+    return padding(p, p, p, p)
+}
+
+fun <T: KView> T.margins(left: Int, top: Int, right: Int, bottom: Int): T {
+    return apply {
+        (view.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
+            it.setMargins(left, top, right, bottom)
+            view.requestLayout()
+        }
+    }
+}
+
+fun <T: KView> T.margins(m: Int): T {
+    return margins(m, m, m, m)
+}
+
+typealias OnClickListener = (View) -> Unit
+
+fun <T: KView> T.onClickListener(l: OnClickListener?): T {
+    return apply {
+        view.setOnClickListener(l)
+    }
+}

@@ -14,6 +14,7 @@ class Kv(context: Context) : KView(context) {
 
     override val view: View
         get() = column {
+                padding(10)
                 row {
                     text("Current date is").textSize(22F)
                     space()

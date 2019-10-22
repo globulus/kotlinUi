@@ -2,4 +2,5 @@
     <string name="app_name">KotlinUiDemo</string>
     <string name="label_1">Label 1</string>
     <string name="button_1">Update label</string>
+    <string name="show_favorites">Show favorites</string>
 </resources>
