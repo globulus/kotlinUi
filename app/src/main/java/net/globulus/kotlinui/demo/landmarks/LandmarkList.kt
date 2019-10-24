@@ -6,14 +6,17 @@ import net.globulus.kotlinui.demo.R
 import net.globulus.kotlinui.widgets.checkBox
 import net.globulus.kotlinui.widgets.list
 import net.globulus.kotlinui.widgets.rootColumn
+import net.globulus.kotlinui.widgets.textField
 
 class LandmarkList(context: Context, private val data: List<Landmark>) : KViewBox(context) {
 
     var showFavorites: Boolean by state(false)
     var showList: Boolean by state(true)
+    var textInput: String = "Initial"
 
     override val root =
         rootColumn {
+            textField(::textInput)
             checkBox("Show list", showList)
                     .bind(::showList)
             checkBox(R.string.show_favorites, showFavorites)

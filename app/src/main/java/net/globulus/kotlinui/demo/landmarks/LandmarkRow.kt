@@ -35,7 +35,7 @@ class LandmarkRecyclableRow(private val context: Context) : KList.Row<Landmark>(
         }
 
     override fun bind(data: Landmark) {
-        image.imageRes = data.getImageResId(context)
+        image.image(data.getImageResId(context))
         title.text(data.name)
         favorite.visible(data.isFavorite)
     }

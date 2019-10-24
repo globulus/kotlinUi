@@ -16,11 +16,10 @@ class KImage(
         setImageResource(resId)
     }
 
-    var imageRes: Int = resId
-        set(value) {
-            field = value
-            view.setImageResource(value)
-        }
+    fun image(resId: Int): KImage {
+        view.setImageResource(resId)
+        return this
+    }
 }
 
 fun <T: KView<*>> T.image(@DrawableRes resId: Int): KImage {
