@@ -8,8 +8,9 @@ import net.globulus.kotlinui.widgets.list
 import net.globulus.kotlinui.widgets.rootColumn
 import net.globulus.kotlinui.widgets.textField
 
-class LandmarkList(context: Context, private val data: List<Landmark>) : KViewBox(context) {
+class LandmarkList(context: Context, data: List<Landmark>) : KViewBox(context) {
 
+    val landmarks = stateList(data.toMutableList(), ::landmarks)
     var showFavorites: Boolean by state(false)
     var showList: Boolean by state(true)
     var textInput: String = "Initial"
@@ -19,21 +20,17 @@ class LandmarkList(context: Context, private val data: List<Landmark>) : KViewBo
             textField(::textInput)
             checkBox(::showList)
                     .text("Show list")
-            checkBox(R.string.show_favorites, showFavorites)
-                    .bind(::showFavorites)
+            checkBox(::showFavorites)
+                    .text(R.string.show_favorites)
                     .margins(5, 10, 5, 10)
             if (showList) {
-                list(data) {
+                list(landmarks) {
                     if (showFavorites && !it.isFavorite) {
                         emptyView()
                     } else {
                         LandmarkRow(context, it)
                     }
-                }
-                        //              recycledList(data) {
-                        //                  LandmarkRecyclableRow(context)
-                        //              }
-                        .bindTo(::showFavorites)
+                }.bindTo(::showFavorites, ::landmarks)
             }
         }.bindTo(::showList)
 }

@@ -1,6 +1,7 @@
 package net.globulus.kotlinui.demo
 
 import android.os.Bundle
+import android.os.Handler
 import androidx.appcompat.app.AppCompatActivity
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -19,7 +20,12 @@ class MainActivity : AppCompatActivity() {
         val landmarks: List<Landmark> = Gson().fromJson(resources.openRawResource(R.raw.landmark_data)
                 .bufferedReader().use { it.readText() }, object : TypeToken<List<Landmark>>() { }.type)
 
-        setContentView(LandmarkList(this, landmarks))
+        val list = LandmarkList(this, landmarks)
+        setContentView(list)
+
+        Handler().postDelayed({
+            list.landmarks.removeIf { it.isFavorite }
+        }, 4000)
 
 
 //        list = LandmarkList(this, landmarks)

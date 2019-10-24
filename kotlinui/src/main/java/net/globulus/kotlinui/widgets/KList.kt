@@ -14,9 +14,9 @@ import kotlin.reflect.KProperty
 typealias ListRenderer<D> = KView<RecyclerView>.(D) -> KView<*>
 typealias RowProducer<D> = () -> KList.Row<D>
 
-class KList<D>(context: Context) : KView<RecyclerView>(context) {
+class KList<D>(context: Context, private val data: List<D>) : KView<RecyclerView>(context) {
 
-    constructor(context: Context, data: List<D>, renderer: ListRenderer<D>) : this(context) {
+    constructor(context: Context, items: List<D>, renderer: ListRenderer<D>) : this(context, items) {
         view.adapter = object : RecyclerView.Adapter<ViewHolder>() {
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
                 return ViewHolder(LayoutInflater.from(context)
@@ -40,7 +40,7 @@ class KList<D>(context: Context) : KView<RecyclerView>(context) {
         }
     }
 
-    constructor(context: Context, data: List<D>, rowProducer: RowProducer<D>) : this(context) {
+    constructor(context: Context, items: List<D>, rowProducer: RowProducer<D>) : this(context, items) {
         view.adapter = object : RecyclerView.Adapter<ViewHolder>() {
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
                 val row = rowProducer()

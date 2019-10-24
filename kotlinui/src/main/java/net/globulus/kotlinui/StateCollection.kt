@@ -1,5 +1,6 @@
 package net.globulus.kotlinui
 
+import java.util.function.Predicate
 import kotlin.reflect.KProperty
 
 open class StateCollection<D, R: KViewProducer, T: MutableCollection<D>>(
@@ -50,6 +51,12 @@ open class StateCollection<D, R: KViewProducer, T: MutableCollection<D>>(
 
     override fun removeAll(elements: Collection<D>): Boolean {
         val result = field.removeAll(elements)
+        notifyObservers()
+        return result
+    }
+
+    override fun removeIf(filter: Predicate<in D>): Boolean {
+        val result = field.removeIf(filter)
         notifyObservers()
         return result
     }
