@@ -5,11 +5,10 @@ import android.widget.CheckBox
 import androidx.annotation.StringRes
 import androidx.annotation.StyleRes
 import net.globulus.kotlinui.KView
-import net.globulus.kotlinui.bindTo
+import net.globulus.kotlinui.bind
 import net.globulus.kotlinui.traits.Checkable
 import net.globulus.kotlinui.traits.OnCheckedChangeListener
 import net.globulus.kotlinui.traits.TextContainer
-import net.globulus.kotlinui.widgets.KCheckBox.Companion.BIND_EXCEPTION
 import kotlin.reflect.KMutableProperty
 
 class KCheckBox(
@@ -91,14 +90,6 @@ fun <T: KView<*>> T.checkBox(text: String?,
     return add(KCheckBox(context, 0, text, state).onCheckedChangeListener(l))
 }
 
-fun <T: KView<*>, R> T.checkBox(prop: KMutableProperty<R>): KCheckBox {
-    val value = prop.getter.call()
-    var text: String? = null
-    var state = false
-    when (value) {
-        is String -> text = value
-        is Boolean -> state = value
-        else -> throw BIND_EXCEPTION
-    }
-    return checkBox(text, state).bindTo(prop)
+fun <T: KView<*>> T.checkBox(prop: KMutableProperty<Boolean>): KCheckBox {
+    return add(KCheckBox(context, 0, null, prop.getter.call())).bind(prop)
 }

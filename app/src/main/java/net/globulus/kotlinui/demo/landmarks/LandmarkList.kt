@@ -17,8 +17,8 @@ class LandmarkList(context: Context, private val data: List<Landmark>) : KViewBo
     override val root =
         rootColumn {
             textField(::textInput)
-            checkBox("Show list", showList)
-                    .bind(::showList)
+            checkBox(::showList)
+                    .text("Show list")
             checkBox(R.string.show_favorites, showFavorites)
                     .bind(::showFavorites)
                     .margins(5, 10, 5, 10)

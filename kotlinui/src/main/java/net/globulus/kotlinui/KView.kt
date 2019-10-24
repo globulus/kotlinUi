@@ -165,8 +165,8 @@ fun <V:View, T: KView<V>> T.applyOnView(block: V.() -> Unit): T {
 //            .newInstance(this.context, this) as T
 //}
 
-fun <P: KRootView<*>, T: KView<*>, R> T.bindTo(root: P, field: KProperty<R>): T {
-    val name = field.name
+fun <P: KRootView<*>, T: KView<*>, R> T.bindTo(root: P, prop: KProperty<R>): T {
+    val name = prop.name
     if (root.observers[name] == null) {
         root.observers[name] = mutableListOf()
     }
@@ -176,8 +176,8 @@ fun <P: KRootView<*>, T: KView<*>, R> T.bindTo(root: P, field: KProperty<R>): T 
     return this
 }
 
-fun <T: KView<*>, R> T.bindTo(vararg fields: KProperty<R>): T {
-    for (field in fields) {
+fun <T: KView<*>, R> T.bindTo(vararg props: KProperty<R>): T {
+    for (field in props) {
         val root = rootSuperParent
                 ?: throw IllegalStateException("${this} doesn\'t have a root super parent!")
         bindTo(root, field)
@@ -185,12 +185,12 @@ fun <T: KView<*>, R> T.bindTo(vararg fields: KProperty<R>): T {
     return this
 }
 
-inline fun <T: KView<*>, reified R> T.bind(field: KMutableProperty<R>): T {
+inline fun <T: KView<*>, reified R> T.bind(prop: KMutableProperty<R>): T {
     val name = R::class.java.name
     if (!boundWriteProperties.containsKey(name)) {
         boundWriteProperties[name] = mutableListOf()
     }
-    boundWriteProperties[name]?.add(field)
+    boundWriteProperties[name]?.add(prop)
     return this
 }
 
