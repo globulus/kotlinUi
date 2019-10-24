@@ -1,35 +1,36 @@
 package net.globulus.kotlinui.demo.landmarks
 
 import android.content.Context
-import android.view.View
 import net.globulus.kotlinui.*
 import net.globulus.kotlinui.demo.R
 import net.globulus.kotlinui.widgets.checkBox
-import net.globulus.kotlinui.widgets.column
 import net.globulus.kotlinui.widgets.list
+import net.globulus.kotlinui.widgets.rootColumn
 
-class LandmarkList(context: Context, private val data: List<Landmark>) : KView<View>(context) {
-    
+class LandmarkList(context: Context, private val data: List<Landmark>) : KViewBox(context) {
+
     var showFavorites: Boolean by state(false)
+    var showList: Boolean by state(true)
 
-    override val view: View
-        get() = kview.view
-
-    private val kview get() =
-        column {
-            checkBox(R.string.show_favorites)
+    override val root =
+        rootColumn {
+            checkBox("Show list", showList)
+                    .bind(::showList)
+            checkBox(R.string.show_favorites, showFavorites)
                     .bind(::showFavorites)
                     .margins(5, 10, 5, 10)
-            list(data) {
-                if (showFavorites && !it.isFavorite) {
-                    emptyView()
-                } else {
-                    LandmarkRow(context, it)
+            if (showList) {
+                list(data) {
+                    if (showFavorites && !it.isFavorite) {
+                        emptyView()
+                    } else {
+                        LandmarkRow(context, it)
+                    }
                 }
+                        //              recycledList(data) {
+                        //                  LandmarkRecyclableRow(context)
+                        //              }
+                        .bindTo(::showFavorites)
             }
-//              recycledList(data) {
-//                  LandmarkRecyclableRow(context)
-//              }
-                    .bindTo(::showFavorites)
-        }
+        }.bindTo(::showList)
 }

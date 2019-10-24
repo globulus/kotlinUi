@@ -2,8 +2,8 @@ package net.globulus.kotlinui
 
 import kotlin.reflect.KProperty
 
-open class StateCollection<D, R: KView<*>, T: MutableCollection<D>>(
-        override val kview: R,
+open class StateCollection<D, R: KViewProducer, T: MutableCollection<D>>(
+        override val producer: R,
         protected val field: T,
         private val property: KProperty<*>
 ) : MutableCollection<D>, UpdatesObservable<R, T> {
@@ -66,11 +66,11 @@ open class StateCollection<D, R: KView<*>, T: MutableCollection<D>>(
 
     protected fun notifyObservers() {
         updateObservable(property)
-        kview.triggerObserver(property.name, field)
+        producer.kView?.triggerObserver(property.name, field)
     }
 }
 
-class StateList<D, R: KView<*>, T: MutableList<D>>(
+class StateList<D, R: KViewProducer, T: MutableList<D>>(
         kview: R,
         field: T,
         property: KProperty<*>

@@ -80,14 +80,14 @@ class KCheckBox(
 }
 
 fun <T: KView<*>> T.checkBox(@StringRes resId: Int,
-                          state: Boolean = false,
-                          l: OnCheckedChangeListener? = null): KCheckBox {
+                             state: Boolean = false,
+                             l: OnCheckedChangeListener? = null): KCheckBox {
     return add(KCheckBox(context, resId, null, state).onCheckedChangeListener(l))
 }
 
 fun <T: KView<*>> T.checkBox(text: String?,
-                          state: Boolean = false,
-                          l: OnCheckedChangeListener? = null): KCheckBox {
+                             state: Boolean = false,
+                             l: OnCheckedChangeListener? = null): KCheckBox {
     return add(KCheckBox(context, 0, text, state).onCheckedChangeListener(l))
 }
 

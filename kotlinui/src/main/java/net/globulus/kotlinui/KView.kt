@@ -9,11 +9,15 @@ import io.reactivex.rxjava3.subjects.BehaviorSubject
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty
 
-abstract class KView<V: View>(val context: Context) {
+private typealias ObservablesMap = MutableMap<String, KView.Observable<*>>
+private typealias ObserversMap = MutableMap<String, MutableList<KView.Observer<*>>>
+private typealias BoundWritePropertiesMap = MutableMap<String, MutableList<KMutableProperty<*>>>
 
-    val observables = mutableMapOf<String, Observable<*>>()
-    val observers = mutableMapOf<String, MutableList<Consumer<*>>>()
-    val boundWriteProperties = mutableMapOf<String, MutableList<KMutableProperty<*>>>()
+abstract class KView<out V: View>(val context: Context) : KViewProducer {
+
+    val observables: ObservablesMap = mutableMapOf()
+    val observers: ObserversMap = mutableMapOf()
+    val boundWriteProperties: BoundWritePropertiesMap = mutableMapOf()
 
     abstract val view: V
 
@@ -31,6 +35,22 @@ abstract class KView<V: View>(val context: Context) {
             }
             return p
         }
+    val rootSuperParent: KRootView<*>?
+        get() {
+            var v: KView<*>? = this
+            while (true) {
+                if (v is KRootView) {
+                    return v
+                }
+                v = v?.parent
+                if (v == null) {
+                    return null
+                }
+            }
+        }
+
+    override val kView
+        get() = this
 
     protected open fun addView(v: View) { }
 
@@ -39,7 +59,7 @@ abstract class KView<V: View>(val context: Context) {
         return v
     }
 
-    fun <T: KView<*>> add(v: T): T {
+    open fun <T: KView<*>> add(v: T): T {
         addView(v.view)
         v.parent = this
         v.id = v::class.java.simpleName + viewCounter
@@ -65,10 +85,10 @@ abstract class KView<V: View>(val context: Context) {
             val bs = observable.behaviorSubject as BehaviorSubject<T>
             if (!observable.bound) {
                 observable.bound = true
-                bindChildren()
+//                bindChildren()
                 observers[key]?.let { observers ->
                     for (c in observers) {
-                        bs.subscribe(c as Consumer<T>)
+                        bs.subscribe(c.consumer as Consumer<T>)
                     }
                 }
             }
@@ -76,13 +96,20 @@ abstract class KView<V: View>(val context: Context) {
         }
     }
 
-    fun bindChildren(kviews: Collection<KView<*>>? = null) {
-        val children = kviews ?: viewMap.values
-        for (child in children) {
-            observers.putAll(child.observers)
-            bindChildren(child.viewMap.values)
-        }
-    }
+//    fun bindChildren(kviews: Collection<KView<*>>? = null) {
+//        val children = kviews ?: viewMap.values
+//        for (child in children) {
+//            for ((k, v) in child.observers) {
+//                if (observers.containsKey(k)) {
+//                    observers[k]?.addAll(v)
+//                } else {
+//                    observers[k] = v
+//                }
+//            }
+//            observers.putAll(child.observers)
+//            bindChildren(child.viewMap.values)
+//        }
+//    }
 
     protected inline fun <reified R> notifyWriteProperties(value: R) {
         boundWriteProperties[R::class.java.name]?.forEach {
@@ -92,9 +119,28 @@ abstract class KView<V: View>(val context: Context) {
 
     open fun <R> updateValue(r: R) { }
 
+    protected fun removeAllChildren() {
+        rootSuperParent?.let {
+            for ((_, v) in it.observables) {
+                v.bound = false
+            }
+            for ((_, v) in viewMap)
+                for ((_, observers) in it.observers) {
+                    observers.removeIf { o -> o.originalKView == v }
+                }
+        }
+        viewCounter = 0
+        viewMap.clear()
+    }
+
     data class Observable<T>(
             val behaviorSubject: BehaviorSubject<T>,
             var bound: Boolean = false
+    )
+
+    data class Observer<R>(
+            val originalKView: KView<*>,
+            val consumer: Consumer<R>
     )
 }
 
@@ -119,21 +165,24 @@ fun <V:View, T: KView<V>> T.applyOnView(block: V.() -> Unit): T {
 //            .newInstance(this.context, this) as T
 //}
 
-fun <P: KView<*>, T: KView<*>, R> T.bindTo(parent: P, field: KProperty<R>): T {
+fun <P: KRootView<*>, T: KView<*>, R> T.bindTo(root: P, field: KProperty<R>): T {
     val name = field.name
-    with(parent) {
-        if (observers[name] == null) {
-            observers[name] = mutableListOf()
-        }
-        observers[name]?.add(Consumer<R> {
-            updateValue(it)
-        })
+    if (root.observers[name] == null) {
+        root.observers[name] = mutableListOf()
     }
+    root.observers[name]?.add(KView.Observer(this, Consumer<R> {
+        updateValue(it)
+    }))
     return this
 }
 
-fun <T: KView<*>, R> T.bindTo(field: KProperty<R>): T {
-    return bindTo(this, field)
+fun <T: KView<*>, R> T.bindTo(vararg fields: KProperty<R>): T {
+    for (field in fields) {
+        val root = rootSuperParent
+                ?: throw IllegalStateException("${this} doesn\'t have a root super parent!")
+        bindTo(root, field)
+    }
+    return this
 }
 
 inline fun <T: KView<*>, reified R> T.bind(field: KMutableProperty<R>): T {
@@ -151,10 +200,10 @@ fun <T: KView<*>> T.id(prop: KMutableProperty<T>): T {
     return id(prop.name) as T
 }
 
-fun <R: KView<*>, T: Any> R.state() = NonNullState<R, T>(this)
-fun <R: KView<*>, T: Any> R.state(initialValue: T) = NonNullState(this, initialValue)
-fun <R: KView<*>, T> R.optionalState() = NullableState<R, T>(this)
-fun <D, R: KView<*>, T: MutableList<D>> R.stateList(field: T, property: KProperty<*>)
+fun <R: KViewProducer, T: Any> R.state() = NonNullState<R, T>(this)
+fun <R: KViewProducer, T: Any> R.state(initialValue: T) = NonNullState(this, initialValue)
+fun <R: KViewProducer, T> R.optionalState() = NullableState<R, T>(this)
+fun <D, R: KViewProducer, T: MutableList<D>> R.stateList(field: T, property: KProperty<*>)
         = StateList(this, field, property)
 
 fun <T: KView<*>> T.frame(width: Int, height: Int): T {

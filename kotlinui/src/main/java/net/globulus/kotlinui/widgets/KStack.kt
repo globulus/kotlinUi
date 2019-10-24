@@ -5,23 +5,54 @@ import android.view.View
 import android.widget.LinearLayout
 import android.widget.Space
 import net.globulus.kotlinui.KView
+import net.globulus.kotlinui.KViewBox
+import net.globulus.kotlinui.root
 
-open class KStack(context: Context, o: Int) : KView<LinearLayout>(context) {
+abstract class KStack<T: KStack<T>> internal constructor(
+        context: Context,
+        o: Int,
+        invokeBlockNow: Boolean,
+        protected val block: T.() -> Unit
+) : KView<LinearLayout>(context) {
 
-    override val view= LinearLayout(context).apply {
+    override val view: LinearLayout = LinearLayout(context).apply {
         orientation = o
     }
+
+    init {
+        if (invokeBlockNow) {
+            invokeBlock()
+        }
+    }
+
+    abstract fun invokeBlock()
 
     override fun addView(v: View) {
         view.addView(v)
     }
+
+    override fun <R> updateValue(r: R) {
+        removeAllChildren()
+        view.removeAllViews()
+        invokeBlock()
+    }
 }
 
-class Column(context: Context) : KStack(context, LinearLayout.VERTICAL)
+class Column(context: Context, invokeBlockNow: Boolean, block: Column.() -> Unit)
+    : KStack<Column>(context, LinearLayout.VERTICAL, invokeBlockNow, block) {
+    override fun invokeBlock() {
+        block()
+    }
+}
 
-class Row(context: Context) : KStack(context, LinearLayout.HORIZONTAL)
+class Row(context: Context, invokeBlockNow: Boolean, block: Row.() -> Unit)
+    : KStack<Row>(context, LinearLayout.HORIZONTAL, invokeBlockNow, block) {
+    override fun invokeBlock() {
+        block()
+    }
+}
 
-fun <T: KStack> T.space(): T {
+fun <T: KStack<*>> T.space(): T {
     val width = if (Column::class.java.isAssignableFrom(this::class.java)) LinearLayout.LayoutParams.MATCH_PARENT else 0
     val height = if (Row::class.java.isAssignableFrom(this::class.java)) LinearLayout.LayoutParams.MATCH_PARENT else 0
     view.addView(Space(context).apply {
@@ -31,13 +62,13 @@ fun <T: KStack> T.space(): T {
 }
 
 fun <T: KView<*>> T.column(block: Column.() -> Unit): Column {
-    return add(Column(context).apply {
-        block()
-    })
+    return add(Column(context, true, block))
 }
 
 fun <T: KView<*>> T.row(block: Row.() -> Unit): Row {
-    return add(Row(context).apply {
-        block()
-    })
+    return add(Row(context, true, block))
 }
+
+fun <T: KViewBox> T.rootColumn(block: Column.() -> Unit) = root(Column(context, false, block))
+
+fun <T: KViewBox> T.rootRow(block: Row.() -> Unit) = root(Row(context, false, block))

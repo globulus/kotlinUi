@@ -11,12 +11,12 @@ import net.globulus.kotlinui.R
 import net.globulus.kotlinui.bindTo
 import kotlin.reflect.KProperty
 
-typealias ListRenderer<T> = KView<RecyclerView>.(T) -> KView<*>
-typealias RowProducer<T> = () -> KList.Row<T>
+typealias ListRenderer<D> = KView<RecyclerView>.(D) -> KView<*>
+typealias RowProducer<D> = () -> KList.Row<D>
 
-class KList<T>(context: Context) : KView<RecyclerView>(context) {
+class KList<D>(context: Context) : KView<RecyclerView>(context) {
 
-    constructor(context: Context, data: List<T>, renderer: ListRenderer<T>) : this(context) {
+    constructor(context: Context, data: List<D>, renderer: ListRenderer<D>) : this(context) {
         view.adapter = object : RecyclerView.Adapter<ViewHolder>() {
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
                 return ViewHolder(LayoutInflater.from(context)
@@ -40,7 +40,7 @@ class KList<T>(context: Context) : KView<RecyclerView>(context) {
         }
     }
 
-    constructor(context: Context, data: List<T>, rowProducer: RowProducer<T>) : this(context) {
+    constructor(context: Context, data: List<D>, rowProducer: RowProducer<D>) : this(context) {
         view.adapter = object : RecyclerView.Adapter<ViewHolder>() {
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
                 val row = rowProducer()
@@ -53,7 +53,7 @@ class KList<T>(context: Context) : KView<RecyclerView>(context) {
 
             @Suppress("UNCHECKED_CAST")
             override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-                (holder.args[0] as Row<T>).bind(data[position])
+                (holder.args[0] as Row<D>).bind(data[position])
                 holder.itemView.forceLayout()
             }
         }

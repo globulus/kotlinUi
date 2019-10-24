@@ -4,9 +4,9 @@ import io.reactivex.rxjava3.subjects.BehaviorSubject
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-interface State<R: KView<*>, T> : ReadWriteProperty<R, T>, UpdatesObservable<R, T>
+interface State<R: KViewProducer, T> : ReadWriteProperty<R, T>, UpdatesObservable<R, T>
 
-class NullableState<R: KView<*>, T>(override val kview: R) : State<R, T?> {
+class NullableState<R: KViewProducer, T>(override val producer: R) : State<R, T?> {
 
     private var field: T? = null
     override var updatedObservable = false
@@ -19,16 +19,16 @@ class NullableState<R: KView<*>, T>(override val kview: R) : State<R, T?> {
     override fun setValue(thisRef: R, property: KProperty<*>, value: T?) {
         updateObservable(property)
         field = value
-        kview.triggerObserver(property.name, field)
+        producer.kView?.triggerObserver(property.name, field)
     }
 }
 
-class NonNullState<R: KView<*>, T: Any>(override val kview: R) : State<R, T> {
+class NonNullState<R: KViewProducer, T: Any>(override val producer: R) : State<R, T> {
 
     private lateinit var field: T
     override var updatedObservable = false
 
-    constructor(kview: R, initialValue: T) : this(kview) {
+    constructor(producer: R, initialValue: T) : this(producer) {
         field = initialValue
     }
 
@@ -40,23 +40,25 @@ class NonNullState<R: KView<*>, T: Any>(override val kview: R) : State<R, T> {
     override fun setValue(thisRef: R, property: KProperty<*>, value: T) {
         updateObservable(property)
         field = value
-        kview.triggerObserver(property.name, field)
+        producer.kView?.triggerObserver(property.name, field)
     }
 }
 
-interface UpdatesObservable<R: KView<*>, T> {
+interface UpdatesObservable<R: KViewProducer, T> {
 
-    val kview: R
+    val producer: R
     var updatedObservable: Boolean
 
     fun updateObservable(property: KProperty<*>) {
         if (updatedObservable) {
             return
         }
-        updatedObservable = true
-        val name = property.name
-        if (!kview.observables.containsKey(name)) {
-            kview.observables[name] = KView.Observable(BehaviorSubject.create<T>())
+        producer.kView?.let {
+            updatedObservable = true
+            val name = property.name
+            if (!it.observables.containsKey(name)) {
+                it.observables[name] = KView.Observable(BehaviorSubject.create<T>())
+            }
         }
     }
 }
