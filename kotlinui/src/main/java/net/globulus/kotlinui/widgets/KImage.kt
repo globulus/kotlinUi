@@ -1,6 +1,7 @@
 package net.globulus.kotlinui.widgets
 
 import android.content.Context
+import android.graphics.drawable.Drawable
 import android.widget.ImageView
 import androidx.annotation.DrawableRes
 import androidx.annotation.StyleRes
@@ -19,6 +20,14 @@ class KImage(
     fun image(resId: Int): KImage {
         view.setImageResource(resId)
         return this
+    }
+
+    override fun <R> updateValue(r: R) {
+        when (r) {
+            is Int -> image(r)
+            is Drawable -> view.setImageDrawable(r)
+            else -> throw IllegalArgumentException("KImage must be bound to either an Int or Drawable prop!")
+        }
     }
 }
 

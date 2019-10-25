@@ -2,11 +2,69 @@
 
 Declarative UI building for Android in Kotlin
 
+### Quickstart
+
+Install the lib.
+
+Add this class to your app:
+
+```kotlin
+class BasicKotlinUi(context: Context) : KViewBox(context) {
+
+    var input: String by state("Change me!")
+    var buttonVisible: Boolean by state(true)
+    var evenOnly: Boolean by state(false)
+
+    override val root = rootColumn {
+        textField(::input)
+        checkBox("Button visible", ::buttonVisible)
+        checkBox("Even only", ::evenOnly)
+         button(::input) {
+           Toast.makeText(context, "Tapped!", Toast.LENGTH_SHORT).show()
+        }.bindTo(::buttonVisible updates KButton::visible)
+        list(listOf(1, 2, 3, 4)) {
+            if (evenOnly && it % 2 == 1) {
+                emptyView()
+            } else {
+                text("$it")
+            }
+        }.bindTo(::evenOnly)
+    }
+}
+```
+
+Then, in your Activity, add this line:
+
+```kotlin
+setContentView(BasicKotlinUi(this))
+```
+
+Now run the app! You'll see a UI consisting of an EditText, two CheckBoxes, a Button and a ListView. Changing the text in EditText will also update the Button title, and changing the checked state of CheckBoxes will toggle UI-components as described in the class.
+
+This simple example brings home basic KotlinUi principles:
+
+1. Custom, stateful views embedded in [KViewBox](#kview-and-kviewbox).
+2. Holding the view [state](#state) in properties.
+3. Specifying the [root view](#krootview).
+4. Declarative UI building by calling simple [widget functions](#widgets).
+5. [Binding](#binding) of views to the state properties.
+
+
+### *KView* and *KViewBox*
+
+*KView* is an abstract class that wraps an *android.view.View*.
+There's quite a bit more code in there, allowing for nested KViews, bindings, etc., but that's the essence of it. The KView class is ubiquitous in the KotlinUi lib, although the lib users needn't work with it directly, unless they're wrapping views in custom widgets.
+
+*KViewBox* wraps a KRootView, allowing for a convenient placeholder for a view class that combines state properties and KViews.
+
+#### KRootView
+
+Your KViewBox must return an instance of KRootView, which is just a regular KView, except it allows the state binders to know when they've reached the top-most level. While you can specify your own root view, *rootColumn* and *rootRow* extension functions allow for seamless creation of a [Column](#kstack) and [Row](#kstack) root containers, respectively.
 
 ### Binding
 
 KViews can be bound to Kotlin properties in order to:
- 1. Automatically refresh themselves when the property is changed
+ 1. Automatically refresh themselves when the property is changed.
  2. Set the property value when their internal state changes.
  
 #### bindTo
@@ -26,6 +84,9 @@ text(R.string.initial_text).bindTo(::labelText)
 ```
 
 Notice the **::** before the property name - this is Kotlin's way of saying that we're passing a property, instead of its value.
+
+
+##### State
 
 Properties that KViews are bound to **must be delegated through the State class**. The easiest way to do so it by using the *state* method, available to all KViews and KViewBoxes.
 * If the *state* method is invoked without arguments, the property is assumed to be nullable and its default value is null.
@@ -136,35 +197,34 @@ KotlinUi lib contains a number of infix functions that allow you to declare bind
 
 ```kotlin
  private class InfixTest(context: Context) : KViewBox(context) {
+    var buttonVisible: Boolean by state(true)
+    var evenOnly: Boolean by state(false)
 
-        var buttonVisible: Boolean by state(true)
-        var evenOnly: Boolean by state(false)
+    lateinit var chbButtonVisible: KCheckBox
+    lateinit var chbEvenOnly: KCheckBox
+    lateinit var kbutton: KButton
+    lateinit var klist: KList<*>
 
-        lateinit var chbButtonVisible: KCheckBox
-        lateinit var chbEvenOnly: KCheckBox
-        lateinit var kbutton: KButton
-        lateinit var klist: KList<*>
-
-        override val root = rootColumn {
-            checkBox("Button visible", buttonVisible).id(::chbButtonVisible)
-            checkBox("Even only", evenOnly).id(::chbEvenOnly)
-            button("Button") { }.id(::kbutton)
-            list(listOf(1, 2, 3, 4)) {
-                if (evenOnly && it % 2 == 1) {
-                    emptyView()
-                } else {
-                    text("$it")
-                }
-            }.id(klist)
-        }
-
-        init {
-            chbButtonVisible updates ::buttonVisible
-            ::buttonVisible updates KButton::visible of kbutton
-            chbEvenOnly updates ::evenOnly
-            ::evenOnly updates klist
-        }
+    override val root = rootColumn {
+        checkBox("Button visible", buttonVisible).id(::chbButtonVisible)
+        checkBox("Even only", evenOnly).id(::chbEvenOnly)
+        button("Button") { }.id(::kbutton)
+        list(listOf(1, 2, 3, 4)) {
+            if (evenOnly && it % 2 == 1) {
+                emptyView()
+            } else {
+                text("$it")
+            }
+        }.id(klist)
     }
+
+    init {
+        chbButtonVisible updates ::buttonVisible
+        ::buttonVisible updates KButton::visible of kbutton
+        chbEvenOnly updates ::evenOnly
+        ::evenOnly updates klist
+    }
+}
 ```
 
 There are 3 variants of the *updates* infix function:
@@ -176,22 +236,105 @@ There are 3 variants of the *updates* infix function:
 You're, of course, free to use any syntax you find to be better, or even combine the two:
 
 ```kotlin
-        var input: String by state("")
-        var buttonVisible: Boolean by state(true)
-        var evenOnly: Boolean by state(false)
+var input: String by state("")
+var buttonVisible: Boolean by state(true)
+var evenOnly: Boolean by state(false)
 
-        override val root = rootColumn {
-            textField(::input)
-            text(::input)
-            checkBox("Button visible", ::buttonVisible)
-            checkBox("Even only", ::evenOnly)
-            ::buttonVisible updates KButton::visible of button("Button") { }
-            ::evenOnly updates list(listOf(1, 2, 3, 4)) {
-                if (evenOnly && it % 2 == 1) {
-                    emptyView()
-                } else {
-                    text("$it")
-                }
-            }
+override val root = rootColumn {
+    textField(::input)
+    text(::input)
+    checkBox("Button visible", ::buttonVisible)
+    checkBox("Even only", ::evenOnly)
+    ::buttonVisible updates KButton::visible of button("Button") { }
+    ::evenOnly updates list(listOf(1, 2, 3, 4)) {
+        if (evenOnly && it % 2 == 1) {
+            emptyView()
+        } else {
+            text("$it")
         }
+    }
+}
 ```
+
+### Widgets
+
+Here's a table of currently available KView widgets that wrap common Android Views:
+
+| Widget        | Wraps    | bindTo updates    | Common usage |
+| ------------- | ------   | -------           | ------- |
+| KText       | TextView   | TextView text       | text(::observedProperty) |
+| KButton       | Button   | Button text       | button(R.string.button_title) { buttonClicked() } |
+| KCheckBox     | Checkbox | text if value is String, isChecked if Boolean       | checkbox(R.string.checkbox_title, ::boundProperty) |
+| KImage        | ImageView | image if value is @DrawableRes Int or a Drawable | image(R.drawable.image) |
+| KTextField    | EditText | EditText text | textField(::boundProperty) |
+| Column        | LinearLayout - VERTICAL | redraws all children | column { text(R.string.text) } |
+| Row           | LinearLayout - HORIZONTAL | redraws all children | row { text(R.string.text) } |
+| KList         | RecyclerView | adapter.notifyDataSetChanged() | [See below](#klist) |
+
+#### KStack
+
+KStack wraps a LinearLayout. Two subclasses are available for general use - *Column* and *Row*.
+
+You can use *space()* function to add a flexible empty space between elements:
+
+```kotlin
+row {
+    image(landmark.getImageResId(context))
+            .frame(150, 150)
+    text(landmark.name).margins(10, 0, 0, 0)
+    space()
+    image(android.R.drawable.star_big_on)
+}
+```
+
+#### KList
+
+KList is a wrapper around a RecyclerView, allowing for much simpler creation of a list view at some performance expense.
+
+Normally, a KList takes in two parameters - a List of items to display, and a renderer, that maps those items into KViews:
+
+```kotlin
+list(listOf(1, 2, 3, 4)) {
+    text("$it")
+}
+```
+
+Above we see a KList operating on a list of integers, rendering a single KText in a row for each one of them.
+
+You can bind a KList to a *StateList* property and have the list content change whenever your state list changes:
+
+```kotlin
+val landmarks = stateList(data, ::landmarks)
+
+list(::landmarks) {
+    if (showFavorites && !it.isFavorite) {
+        emptyView()
+    } else {
+        LandmarkRow(context, it)
+    }
+}
+```
+
+Naturally, you can bind a KList to any property to have it refresh once that property changes, regardless of its type.
+
+Above you can see two more useful traits of lists:
+
+1. If a certain item should be omitted from the list, have the renderer block return *emptyView()*.
+2. You can create custom KViews for rows and pass and return them from a renderer. E.g, here's a sample LandmarkRow:
+
+```kotlin
+class LandmarkRow(context: Context, private val landmark: Landmark) : KView<View>(context) {
+    override val view = row {
+            image(landmark.getImageResId(context))
+                    .frame(150, 150)
+            text(landmark.name).margins(10, 0, 0, 0)
+            space()
+            if (landmark.isFavorite) {
+                image(android.R.drawable.star_big_on)
+            }
+        }.padding(5)
+                .view
+}
+```
+
+

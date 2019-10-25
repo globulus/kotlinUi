@@ -15,7 +15,7 @@ class KButton(
         @StringRes resId: Int,
         text: String? = null,
         @StyleRes style: Int = android.R.style.Widget_Button,
-        l: OnClickListener?
+        l: OnClickListener<Button>?
 ) : KView<Button>(context), TextContainer<KButton> {
 
     override val view = Button(context, null, 0, style).apply {
@@ -24,7 +24,9 @@ class KButton(
         } else {
             setText(resId)
         }
-        setOnClickListener(l)
+        setOnClickListener {
+            l?.invoke(this@KButton)
+        }
     }
 
     override fun <R> updateValue(r: R) {
@@ -52,14 +54,14 @@ class KButton(
     }
 }
 
-fun <T: KView<*>> T.button(@StringRes resId: Int, l: OnClickListener?): KButton {
+fun <T: KView<*>> T.button(@StringRes resId: Int, l: OnClickListener<Button>?): KButton {
     return add(KButton(context, resId, null, 0, l))
 }
 
-fun <T: KView<*>> T. button(text: String?, l: OnClickListener?): KButton {
+fun <T: KView<*>> T. button(text: String?, l: OnClickListener<Button>?): KButton {
     return add(KButton(context, 0, text, 0, l))
 }
 
-fun <T: KView<*>> T. button(prop: KProperty<String>, l: OnClickListener?): KButton {
+fun <T: KView<*>> T. button(prop: KProperty<String>, l: OnClickListener<Button>?): KButton {
     return button(prop.getter.call(), l).bindTo(prop)
 }

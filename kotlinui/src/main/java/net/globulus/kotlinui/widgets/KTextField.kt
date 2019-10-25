@@ -70,10 +70,14 @@ class KTextField(
         view.setTextColor(color)
         return this
     }
+
+    override fun <R> updateValue(r: R) {
+        view.setText(r.toString())
+    }
 }
 
 fun <T: KView<*>> T.textField(@StringRes resId: Int): KTextField {
-    return add(KTextField(context, resId))
+    return add(KTextField(context, resId, null))
 }
 
 fun <T: KView<*>> T.textField(text: String? = null): KTextField {

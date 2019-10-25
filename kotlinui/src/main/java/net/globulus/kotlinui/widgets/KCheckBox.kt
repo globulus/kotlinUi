@@ -74,7 +74,7 @@ class KCheckBox(
     }
 
     companion object {
-        val BIND_EXCEPTION = IllegalArgumentException("CheckBox must be bound to either a Boolean or String prop!")
+        val BIND_EXCEPTION = IllegalArgumentException("KCheckBox must be bound to either a Boolean or String prop!")
     }
 }
 

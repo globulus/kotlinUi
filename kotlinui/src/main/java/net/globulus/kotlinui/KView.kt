@@ -15,6 +15,8 @@ private typealias ObservablesMap = MutableMap<String, KView.Observable<*>>
 private typealias ObserversMap = MutableMap<String, MutableList<KView.Observer<*>>>
 private typealias BoundWritePropertiesMap = MutableMap<String, MutableList<KMutableProperty<*>>>
 
+typealias OnClickListener<V> = (KView<V>) -> Unit
+
 abstract class KView<out V: View>(val context: Context) : KViewProducer {
 
     val observables: ObservablesMap = mutableMapOf()
@@ -296,11 +298,11 @@ fun <T: KView<*>> T.visible(visible: Boolean): T {
     }
 }
 
-typealias OnClickListener = (View) -> Unit
-
-fun <T: KView<*>> T.onClickListener(l: OnClickListener?): T {
+fun <T: KView<*>> T.onClickListener(l: OnClickListener<*>?): T {
     return apply {
-        view.setOnClickListener(l)
+        view.setOnClickListener {
+            l?.invoke(this)
+        }
     }
 }
 
