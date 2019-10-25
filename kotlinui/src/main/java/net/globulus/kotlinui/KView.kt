@@ -6,8 +6,10 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import io.reactivex.rxjava3.functions.Consumer
 import io.reactivex.rxjava3.subjects.BehaviorSubject
+import kotlin.reflect.KFunction
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty
+import kotlin.reflect.full.extensionReceiverParameter
 
 private typealias ObservablesMap = MutableMap<String, KView.Observable<*>>
 private typealias ObserversMap = MutableMap<String, MutableList<KView.Observer<*>>>
@@ -165,22 +167,50 @@ fun <V:View, T: KView<V>> T.applyOnView(block: V.() -> Unit): T {
 //            .newInstance(this.context, this) as T
 //}
 
-fun <P: KRootView<*>, T: KView<*>, R> T.bindTo(root: P, prop: KProperty<R>): T {
+fun <P: KRootView<*>, T: KView<*>, R> T.bindTo(
+        root: P,
+        prop: KProperty<R>,
+        callback: KFunction<T>? = null
+): T {
     val name = prop.name
     if (root.observers[name] == null) {
         root.observers[name] = mutableListOf()
     }
     root.observers[name]?.add(KView.Observer(this, Consumer<R> {
-        updateValue(it)
+        if (callback != null) {
+            if (callback.extensionReceiverParameter == null) {
+                callback.call(it)
+            } else {
+                callback.call(this, it)
+            }
+        } else {
+            updateValue(it)
+        }
     }))
     return this
 }
 
+fun <T: KView<*>, R> T.bindTo(prop: KProperty<R>, callback: KFunction<T>? = null): T {
+    val root = rootSuperParent
+            ?: throw IllegalStateException("${this} doesn\'t have a root super parent!")
+    bindTo(root, prop, callback)
+    return this
+}
+
 fun <T: KView<*>, R> T.bindTo(vararg props: KProperty<R>): T {
-    for (field in props) {
-        val root = rootSuperParent
-                ?: throw IllegalStateException("${this} doesn\'t have a root super parent!")
-        bindTo(root, field)
+    val root = rootSuperParent
+            ?: throw IllegalStateException("${this} doesn\'t have a root super parent!")
+    for (prop in props) {
+        bindTo(root, prop)
+    }
+    return this
+}
+
+fun <T: KView<*>, R> T.bindTo(vararg pairs: Pair<KProperty<R>, KFunction<T>>): T {
+    val root = rootSuperParent
+            ?: throw IllegalStateException("${this} doesn\'t have a root super parent!")
+    for (pair in pairs) {
+        bindTo(root, pair.first, pair.second)
     }
     return this
 }
@@ -192,6 +222,25 @@ inline fun <T: KView<*>, reified R> T.bind(prop: KMutableProperty<R>): T {
     }
     boundWriteProperties[name]?.add(prop)
     return this
+}
+
+inline infix fun <T: KView<*>, reified R> T.updates(prop: KMutableProperty<R>): T {
+    bind(prop)
+    return this
+}
+
+infix fun <T: KView<*>, R> KProperty<R>.updates(kView: T): T {
+    kView.bindTo(this)
+    return kView
+}
+
+infix fun <T: KView<*>, R, A: KProperty<R>, B: KFunction<T>> A.updates(method: B): Pair<A, B> {
+    return this to method
+}
+
+infix fun <T: KView<*>, R, A: KProperty<R>, B: KFunction<T>> Pair<A, B>.of(kView: T): T {
+    kView.bindTo(this)
+    return kView
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -235,7 +284,7 @@ fun <T: KView<*>> T.margins(m: Int): T {
     return margins(m, m, m, m)
 }
 
-fun <T: KView<*>> T.visible(visibility: Int): T {
+fun <T: KView<*>> T.visibility(visibility: Int): T {
     return apply {
         view.visibility = visibility
     }

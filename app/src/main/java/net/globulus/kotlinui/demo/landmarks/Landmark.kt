@@ -11,7 +11,8 @@ data class Landmark(
         val park: String,
         val imageName: String,
         val isFeatured: Boolean,
-        val isFavorite: Boolean
+        val isFavorite: Boolean,
+        val header: String? = null
 )
 
 fun Landmark.getImageResId(context: Context): Int {

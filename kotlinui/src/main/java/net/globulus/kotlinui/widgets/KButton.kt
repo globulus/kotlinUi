@@ -14,7 +14,7 @@ class KButton(
         context: Context,
         @StringRes resId: Int,
         text: String? = null,
-        @StyleRes style: Int = 0,
+        @StyleRes style: Int = android.R.style.Widget_Button,
         l: OnClickListener?
 ) : KView<Button>(context), TextContainer<KButton> {
 

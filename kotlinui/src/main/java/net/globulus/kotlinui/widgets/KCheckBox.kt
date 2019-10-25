@@ -93,3 +93,11 @@ fun <T: KView<*>> T.checkBox(text: String?,
 fun <T: KView<*>> T.checkBox(prop: KMutableProperty<Boolean>): KCheckBox {
     return add(KCheckBox(context, 0, null, prop.getter.call())).bind(prop)
 }
+
+fun <T: KView<*>> T.checkBox(@StringRes resId: Int, prop: KMutableProperty<Boolean>): KCheckBox {
+    return add(KCheckBox(context, resId, null, prop.getter.call())).bind(prop)
+}
+
+fun <T: KView<*>> T.checkBox(text: String, prop: KMutableProperty<Boolean>): KCheckBox {
+    return add(KCheckBox(context, 0, text, prop.getter.call())).bind(prop)
+}
