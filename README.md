@@ -16,10 +16,11 @@ class BasicKotlinUi(context: Context) : KViewBox(context) {
     var evenOnly: Boolean by state(false)
 
     override val root = rootColumn {
-        textField(::input)
+        textField(::input).margins(0, 0, 0, 10)
         checkBox("Button visible", ::buttonVisible)
         checkBox("Even only", ::evenOnly)
-         button(::input) {
+            .textSize(14F)
+        button(::input) {
            Toast.makeText(context, "Tapped!", Toast.LENGTH_SHORT).show()
         }.bindTo(::buttonVisible updates KButton::visible)
         list(listOf(1, 2, 3, 4)) {
@@ -29,7 +30,7 @@ class BasicKotlinUi(context: Context) : KViewBox(context) {
                 text("$it")
             }
         }.bindTo(::evenOnly)
-    }
+    }.padding(10)
 }
 ```
 
@@ -69,17 +70,15 @@ KViews can be bound to Kotlin properties in order to:
  
 #### bindTo
 
-Method *bindTo* is used to bind a KView to a property, so that the KView is updated when the property's setter is invoked:
+Method *bindTo* is used to bind a __KView__ to a __property__, so that the KView is updated when the property's setter is invoked:
 
 ```kotlin
 class MyView(context: Context) : KViewBox(context) {
-var labelText: String? by state()
-
-...
-
-text(R.string.initial_text).bindTo(::labelText)
-
-...
+    var labelText: String? by state()
+    
+    ...
+    text(R.string.initial_text).bindTo(::labelText)
+    ...
 }
 ```
 
@@ -92,14 +91,14 @@ Properties that KViews are bound to **must be delegated through the State class*
 * If the *state* method is invoked without arguments, the property is assumed to be nullable and its default value is null.
 * You must pass an initial value (e.g,, *state("Something")*) for non-null properties.
 
-Now, when the prop is updated, e.g
+Now, when the prop is updated:
 ```kotlin
 myViewInstance.labelText = "New text"
 ```
 
 the text view will be updated automatically.
 
-The *bindTo* method can take any number of properties, and all will be bound to the calling KView:
+The *bindTo* method can take any number of properties, and the calling KView will be bound to all of them:
 
 ```kotlin
 text("").bindTo(::someProp, ::otherProp)
@@ -107,28 +106,26 @@ text("").bindTo(::someProp, ::otherProp)
 
 ##### Binding methods
 
-Normally, update to property invokes the *update* method of its bound view, with the new value passed as its single parameter. Different KView widgets implement this method differently based on their expected behavior (e.g, a KText updates its text, while a KList refreshes its content).
+Normally, updating a property invokes the **update** method of its bound KView, with the new value passed as its single parameter. Different KView widgets implement this method differently based on their expected behavior (e.g, a KText updates its text, while a KList refreshes its content).
 
-You can also specify which method is to be updated, e.g:
+You can also specify which method is to be invoked instead of the *update* method:
 
 ```kotlin
 class MyView(context: Context) : KViewBox(context) {
-var showText = true
-
-...
-
-text(R.string.initial_text).bindTo(::showText, KText::visible)
-
-...
+    var showText = true
+    
+    ...
+    text(R.string.initial_text).bindTo(::showText, KText::visible)
+    ...
 }
 ```
 
 Now, whenever the *showText* prop is updated, the UI element that's bound to it will have its *visible* method invoked with the prop value passed as param. In this particular case, setting the *showText* prop to true or false will render the KText visible or invisible, respectively.
 
-There's an overload of the *bindTo* method that takes a vararg of property-method pairs, and then binds them all to the caller KView. In order to make this easier, you can use the following syntax:
+There's an overload of the *bindTo* method that takes a vararg of property-method pairs, and then binds them all to the caller KView. In order to make this easier to type, you can use the following syntax:
 
 ```kotlin
-text(R.string.initial_text).bindTo(::showText updates KText::visible, ::textContent updates ::text)
+text(R.string.initial_text).bindTo(::showText updates KText::visible, ::textContent updates KText::text)
 }
 ```
 
@@ -136,7 +133,7 @@ Note - bindTo on a *KStack* (*Column* or *Row*) will re-render its entire conten
 
 ##### State collections and lists
 
-The KotlinUi lib provides two classes, *StateCollection* and *StateList*, that represent a mutable collection and list, respectively, that **updates its bound KViews when its content changes**. E.g, when a *StateList*'s *add* or *remove* methods are called, its bound KViews will be notified of the change.
+The KotlinUi lib provides two classes, *StateCollection* and *StateList*, that represent a mutable collection and list, respectively, that **updates its bound KViews when its content changes**. E.g, when a *StateList*'s *add* or *remove* methods are called (or any other mutating method), its bound KViews will be notified of the change.
 
 ```kotlin
 val numbers = stateList(mutableListOf(1, 2, 3, 4), ::numbers)
@@ -152,7 +149,7 @@ The *stateList* function receives a mutable list it wraps, as well as the proper
 
 #### bind
 
-Method *bind* is used to bind a property to a KView, so that the property's value is changed when the KView changes.
+Method *bind* is used to bind a __property__ to a __KView__, so that the property's value is changed when the KView changes.
 
 Here's an example of binding a Boolean to a KCheckbox, so that the prop changes when the checkbox is (un)checked:
 
@@ -176,9 +173,9 @@ textField().bind(::text)
 
 #### Convenience constructors - *bindTo* or *bind*
 
-Most KView widget extension methods offer a variant that takes in a property, and then either binds it or binds to it. Which method is used is entirely up to the widget developer, but the general way of thinking divides the widgets into two groups: those that *display* the state, and those that *change* the state.
+Most KView widget extension methods offer a variant that takes in a property, and then either binds it or binds to it. Which method is used is entirely up to the widget developer, but you can along the lines of dividing the widgets into two groups: those that *display* the state, and those that *change* the state.
 
-E.g, KText simply displays a string, and thus can be *bound to* a String prop. On the other hand, a KCheckBox responds to change events, and as such should *bind* a Boolean prop to reflect its state changes. Bear this distinction in mind when designing custom widgets and their convenience KView methods. 
+E.g, a KText simply displays a text, and thus can be *bound to* a String prop. On the other hand, a KCheckBox responds to change events, and as such should *bind* a Boolean prop to reflect its state changes. Bear this distinction in mind when designing custom widgets and their convenience KView methods. 
 
 Here's a quick reference of basic widgets and their convenience binder methods:
 
@@ -196,7 +193,7 @@ Here's a quick reference of basic widgets and their convenience binder methods:
 KotlinUi lib contains a number of infix functions that allow you to declare bindings in almost natural language. Consider this example:
 
 ```kotlin
- private class InfixTest(context: Context) : KViewBox(context) {
+ private class InfixDemo(context: Context) : KViewBox(context) {
     var buttonVisible: Boolean by state(true)
     var evenOnly: Boolean by state(false)
 
@@ -215,7 +212,7 @@ KotlinUi lib contains a number of infix functions that allow you to declare bind
             } else {
                 text("$it")
             }
-        }.id(klist)
+        }.id(::klist)
     }
 
     init {
@@ -291,7 +288,7 @@ row {
 
 KList is a wrapper around a RecyclerView, allowing for much simpler creation of a list view at some performance expense.
 
-Normally, a KList takes in two parameters - a List of items to display, and a renderer, that maps those items into KViews:
+Normally, a KList takes in two parameters - a List of items to display, and a renderer that maps those items into KViews:
 
 ```kotlin
 list(listOf(1, 2, 3, 4)) {
