@@ -126,7 +126,6 @@ There's an overload of the *bindTo* method that takes a vararg of property-metho
 
 ```kotlin
 text(R.string.initial_text).bindTo(::showText updates KText::visible, ::textContent updates KText::text)
-}
 ```
 
 Note - bindTo on a *KStack* (*Column* or *Row*) will re-render its entire content.
