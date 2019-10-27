@@ -22,7 +22,8 @@ class BasicKotlinUi(context: Context) : KViewBox(context) {
             .textSize(14F)
         button(::input) {
            Toast.makeText(context, "Tapped!", Toast.LENGTH_SHORT).show()
-        }.bindTo(::buttonVisible updates KButton::visible)
+        }.widthWrapContent()
+         .bindTo(::buttonVisible updates KButton::visible)
         list(listOf(1, 2, 3, 4)) {
             if (evenOnly && it % 2 == 1) {
                 emptyView()
@@ -267,6 +268,14 @@ Here's a table of currently available KView widgets that wrap common Android Vie
 | Row           | LinearLayout - HORIZONTAL | redraws all children | row { text(R.string.text) } |
 | KList         | RecyclerView | adapter.notifyDataSetChanged() | [See below](#klist) |
 
+
+#### Widget Functions
+
+Beyond what's available in the constructor functions, you can modify your widgets using a variety of available. extensions functions. Some are available to all the KViews, such as *visible*, *padding* or *margins*. Others are applicable to KViews that embed text, such as *KText* and *KButton* - *text*, *textSize*, *textColor*, etc. There are also functions that work only on a specific KView, such as *inputType* of *KTextField*.
+
+The important takeaway is that **all these functions are *setters* - they modify the KView and return it** to allow for fluent syntax. This is because KViews are supposed to be **stateless** - they reflect the declared state, and communicate back through events, but you **cannot** (or at least shouldn't) inspect individual KView's internal state at runtime - that's what [state properties](#state) and [bindings](#binding) are for.
+
+
 #### KStack
 
 KStack wraps a LinearLayout. Two subclasses are available for general use - *Column* and *Row*.
@@ -332,5 +341,3 @@ class LandmarkRow(context: Context, private val landmark: Landmark) : KView<View
                 .view
 }
 ```
-
-

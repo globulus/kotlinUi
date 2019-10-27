@@ -3,6 +3,7 @@ package net.globulus.kotlinui.demo
 import android.content.Context
 import android.os.Bundle
 import android.os.Handler
+import android.view.Gravity
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.gson.Gson
@@ -59,13 +60,14 @@ class MainActivity : AppCompatActivity() {
         var buttonVisible: Boolean by state(true)
         var evenOnly: Boolean by state(false)
 
-        override val root = rootColumn {
-            textField(::input)
+        override val root = rootColumn(Gravity.CENTER_HORIZONTAL) {
+            textField(::input).margins(0, 0, 0, 10)
             checkBox("Button visible", ::buttonVisible)
             checkBox("Even only", ::evenOnly)
             button(::input) {
                 Toast.makeText(context, "Tapped!", Toast.LENGTH_SHORT).show()
-            }.bindTo(::buttonVisible updates KButton::visible)
+            }.widthWrapContent()
+             .bindTo(::buttonVisible updates KButton::visible)
             list(listOf(1, 2, 3, 4)) {
                 if (evenOnly && it % 2 == 1) {
                     emptyView()
@@ -73,7 +75,7 @@ class MainActivity : AppCompatActivity() {
                     text("$it")
                 }
             }.bindTo(::evenOnly)
-        }
+        }.padding(10)
     }
 
 //    private class InfixTest(context: Context) : KViewBox(context) {

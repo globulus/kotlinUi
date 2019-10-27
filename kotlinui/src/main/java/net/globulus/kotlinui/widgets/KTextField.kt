@@ -74,6 +74,11 @@ class KTextField(
     override fun <R> updateValue(r: R) {
         view.setText(r.toString())
     }
+
+    fun inputType(type: Int): KTextField {
+        view.inputType = type
+        return this
+    }
 }
 
 fun <T: KView<*>> T.textField(@StringRes resId: Int): KTextField {

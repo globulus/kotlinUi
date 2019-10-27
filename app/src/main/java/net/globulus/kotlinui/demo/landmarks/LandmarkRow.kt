@@ -34,14 +34,12 @@ class LandmarkRow(context: Context, private val landmark: Landmark) : KView<View
 //    private lateinit var title: KText
 //    private lateinit var favorite: KImage
 //
-//    override val kview = kview_<LinearLayout>(context) {
-//            row {
-//                image = image(0).frame(150, 150)
-//                title = text("")
-//                space()
-//                favorite = image(android.R.drawable.star_big_on)
-//            }.padding(5)
-//        }
+//    override val kview = Row(context, true) {
+//        image = image(0).frame(150, 150)
+//        title = text("")
+//        space()
+//        favorite = image(android.R.drawable.star_big_on)
+//    }.padding(5)
 //
 //    override fun bind(data: Landmark) {
 //        image.image(data.getImageResId(context))

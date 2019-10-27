@@ -11,11 +11,11 @@ import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty
 import kotlin.reflect.full.extensionReceiverParameter
 
+typealias OnClickListener<V> = (KView<V>) -> Unit
+
 private typealias ObservablesMap = MutableMap<String, KView.Observable<*>>
 private typealias ObserversMap = MutableMap<String, MutableList<KView.Observer<*>>>
 private typealias BoundWritePropertiesMap = MutableMap<String, MutableList<KMutableProperty<*>>>
-
-typealias OnClickListener<V> = (KView<V>) -> Unit
 
 abstract class KView<out V: View>(val context: Context) : KViewProducer {
 
@@ -274,12 +274,7 @@ fun <T: KView<*>> T.padding(p: Int): T {
 }
 
 fun <T: KView<*>> T.margins(left: Int, top: Int, right: Int, bottom: Int): T {
-    return apply {
-        (view.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
-            it.setMargins(left, top, right, bottom)
-            view.requestLayout()
-        }
-    }
+    return applyLayoutParams { it.setMargins(left, top, right, bottom) }
 }
 
 fun <T: KView<*>> T.margins(m: Int): T {
@@ -295,6 +290,31 @@ fun <T: KView<*>> T.visibility(visibility: Int): T {
 fun <T: KView<*>> T.visible(visible: Boolean): T {
     return apply {
         view.visibility = if (visible) View.VISIBLE else View.GONE
+    }
+}
+
+fun <T: KView<*>> T.widthMatchParent(): T {
+   return applyLayoutParams { it.width = ViewGroup.LayoutParams.MATCH_PARENT }
+}
+
+fun <T: KView<*>> T.widthWrapContent(): T {
+    return applyLayoutParams { it.width = ViewGroup.LayoutParams.WRAP_CONTENT }
+}
+
+fun <T: KView<*>> T.heightMatchParent(): T {
+    return applyLayoutParams { it.height = ViewGroup.LayoutParams.MATCH_PARENT }
+}
+
+fun <T: KView<*>> T.heightWrapContent(): T {
+    return applyLayoutParams { it.height = ViewGroup.LayoutParams.WRAP_CONTENT }
+}
+
+private fun <T: KView<*>> T.applyLayoutParams(block: (ViewGroup.MarginLayoutParams) -> Unit): T {
+    return apply {
+        (view.layoutParams as? ViewGroup.MarginLayoutParams)?.let {
+            block(it)
+            view.requestLayout()
+        }
     }
 }
 

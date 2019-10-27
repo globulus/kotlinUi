@@ -14,11 +14,15 @@ class KButton(
         context: Context,
         @StringRes resId: Int,
         text: String? = null,
-        @StyleRes style: Int = android.R.style.Widget_Button,
+        @StyleRes style: Int = 0,
         l: OnClickListener<Button>?
 ) : KView<Button>(context), TextContainer<KButton> {
 
-    override val view = Button(context, null, 0, style).apply {
+    override val view = (if (style == 0)
+        Button(context)
+    else
+        Button(context, null, 0, style)
+    ).apply {
         if (resId == 0) {
             this.text = text
         } else {
