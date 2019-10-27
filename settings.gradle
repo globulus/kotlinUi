@@ -1,2 +1,2 @@
-include ':app', ':kotlinui', ':kotlinui-processor', ':kotlinui-annotations', ':demolib'
+include ':app', ':kotlinui'
 rootProject.name='KotlinUiDemo'
