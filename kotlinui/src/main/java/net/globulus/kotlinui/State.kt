@@ -45,10 +45,13 @@ interface Stateful {
     companion object {
         fun default(update: ((Any) -> Unit)? = null): Stateful {
             return object : Default() {
+                init {
+                    observables[toString()] = State.Observable(BehaviorSubject.create<Any?>())
+                }
+
                 override fun <R> updateValue(r: R) {
                     update?.invoke(r as Any)
                 }
-
             }
         }
     }
@@ -68,6 +71,13 @@ interface State<R: StatefulProducer, T> : ReadWriteProperty<R, T>, UpdatesObserv
             val sender: Stateful,
             val consumer: Consumer<R>
     )
+
+    fun triggerObserver(property: KProperty<*>, value: T) {
+        producer.stateful?.let {
+            it.triggerObserver(property.name, value)
+            it.triggerObserver(it.toString(), value)
+        }
+    }
 }
 
 class NullableState<R: StatefulProducer, T>(override val producer: R) : State<R, T?> {
@@ -82,7 +92,7 @@ class NullableState<R: StatefulProducer, T>(override val producer: R) : State<R,
     override fun setValue(thisRef: R, property: KProperty<*>, value: T?) {
         updateObservable(property)
         field = value
-        producer.stateful?.triggerObserver(property.name, field)
+        triggerObserver(property, value)
     }
 }
 
@@ -102,7 +112,7 @@ class NonNullState<R: StatefulProducer, T: Any>(override val producer: R) : Stat
     override fun setValue(thisRef: R, property: KProperty<*>, value: T) {
         updateObservable(property)
         field = value
-        producer.stateful?.triggerObserver(property.name, field)
+        triggerObserver(property, value)
     }
 }
 
@@ -128,7 +138,7 @@ fun <R: StatefulProducer, T: Any> R.state() = NonNullState<R, T>(this)
 fun <R: StatefulProducer, T: Any> R.state(initialValue: T) = NonNullState(this, initialValue)
 fun <R: StatefulProducer, T> R.optionalState() = NullableState<R, T>(this)
 
-private fun <P: StatefulProducer, T: Stateful, R> T.bindTo(
+internal fun <P: StatefulProducer, T: Stateful, R> T.bindTo(
         root: P,
         name: String,
         callback: KCallable<T>? = null
@@ -157,6 +167,12 @@ fun <P: StatefulProducer, T: Stateful, R> T.bindTo(
         prop: KProperty<R>,
         callback: KCallable<T>? = null
 ) = bindTo<P, T, R>(root = root, name = prop.name, callback = callback)
+
+fun <P: StatefulProducer, T: Stateful> T.bindTo(producer: P): T {
+    val name = producer.stateful?.toString()
+            ?: throw IllegalArgumentException("Attempt to bind to a null stateful!")
+    return bindTo<P, T, Any>(producer, name)
+}
 
 inline fun <T: Stateful, reified R> T.bind(prop: KMutableProperty<R>): T {
     val name = R::class.java.name

@@ -73,7 +73,10 @@ open class StateCollection<D, R: StatefulProducer, T: MutableCollection<D>>(
 
     protected fun notifyObservers() {
         updateObservable(property)
-        producer.stateful?.triggerObserver(property.name, field)
+        producer.stateful?.let {
+            it.triggerObserver(property.name, field)
+            it.triggerObserver(it.toString(), field)
+        }
     }
 }
 
