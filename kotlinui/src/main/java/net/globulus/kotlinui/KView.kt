@@ -1,5 +1,6 @@
 package net.globulus.kotlinui
 
+import android.app.Activity
 import android.content.Context
 import android.view.View
 import android.view.ViewGroup
@@ -66,6 +67,10 @@ abstract class KView<out V: View>(val context: Context) : Stateful, StatefulProd
         return v
     }
 
+    fun <T: KViewBox> add(box: T): View {
+        return add(box.view)
+    }
+
     fun id(id: String): KView<V>  {
         val oldId = this.id
         this.id = id
@@ -114,14 +119,16 @@ abstract class KView<out V: View>(val context: Context) : Stateful, StatefulProd
     }
 }
 
+fun Activity.setContentView(context: Context, block: KView<View>.() -> KView<View>) {
+    setContentView(kview(context, block).view)
+}
+
 fun <V: View> kview(context: Context, block: KView<V>.() -> KView<V>): KView<V> {
     return object : KView<V>(context) {
         override val view: V
             get() = block().view
     }
 }
-
-fun <V: View> kview_(context: Context, block: KView<V>.() -> KView<V>) = kview(context, block)
 
 fun <V:View, T: KView<V>> T.applyOnView(block: V.() -> Unit): T {
     this.view.apply(block)
@@ -163,13 +170,21 @@ infix fun <T: KView<*>, R> KProperty<R>.updates(kView: T): T {
     return kView
 }
 
-infix fun <T: KView<*>, R, A: KProperty<R>, B: KCallable<T>> A.updates(method: B): Pair<A, B> {
-    return this to method
+infix fun <T: KView<*>, R, A: KProperty<R>, B: StatefulProducer, C: KCallable<T>> Pair<A, B>.triggers(callable: C): Triple<A, B, C> {
+    return Triple(first, second, callable)
 }
+
+infix fun <T: KView<*>, R, A: KProperty<R>, B: KCallable<T>> A.updates(method: B) = this to method
+
+infix fun <R, A: KProperty<R>, B: StatefulProducer> A.of(producer: B) = this to producer
 
 infix fun <T: KView<*>, R, A: KProperty<R>, B: KCallable<T>> Pair<A, B>.of(kView: T): T {
     kView.bindTo(this)
     return kView
+}
+
+infix fun <T: KView<*>, R, A: KProperty<R>, B: StatefulProducer, C: KCallable<T>> Triple<A, B, C>.on(kView: T): T {
+    return kView.bindTo(second, first, third)
 }
 
 @Suppress("UNCHECKED_CAST")

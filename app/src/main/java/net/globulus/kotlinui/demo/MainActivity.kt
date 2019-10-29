@@ -33,33 +33,17 @@ class MainActivity : AppCompatActivity() {
 
 //        setContentView(list)
         val statefulTest = StatefulTest()
-        setContentView(kview<View>(this) {
+        setContentView(this) {
             column {
                 add(CounterView(this@MainActivity, statefulTest))
-                add(InfixTest(this@MainActivity, statefulTest).view)
+                add(InfixTest(this@MainActivity, statefulTest))
             }
-        }.view)
+        }
 
         Handler().postDelayed({
 //            list.landmarks.removeIf { it.isFavorite }
 //            list.list.visible(false)
         }, 4000)
-
-
-//        list = LandmarkList(this, landmarks)
-//        val kv = Kv(this)
-//        root.addView(
-//                list.view
-////                kv.view
-////        kview(this) {
-////            column {
-////                text(R.string.label_1)
-////                button(R.string.button_1) {
-////                    Toast.makeText(this@MainActivity, getString(R.string.button_1), Toast.LENGTH_LONG).show()
-////                }
-////            }
-////        }
-//        )
     }
 
     class StatefulTest : StatefulProducer {
@@ -85,13 +69,15 @@ class MainActivity : AppCompatActivity() {
         var buttonVisible: Boolean by state(true)
         var evenOnly: Boolean by state(false)
 
+        lateinit var chbEventOnly: KCheckBox
+
         override val root = rootColumn(Gravity.CENTER_HORIZONTAL) {
             textField(statefulTest::input).margins(0, 0, 0, 10)
             checkBox("Button visible", ::buttonVisible)
-            checkBox("Even only", ::evenOnly)
-//                    .bindTo(statefulTest, statefulTest::counter, wrap(KCheckBox::text) {
-//                        "Even only counter $it"
-//                    })
+            chbEventOnly = checkBox("Even only", ::evenOnly)
+                    .bindTo(statefulTest, statefulTest::counter, wrap(KCheckBox::text) {
+                        "Even only counter $it"
+                    })
             button("Increment") {
                 Toast.makeText(context, "Tapped!", Toast.LENGTH_SHORT).show()
                 statefulTest.counter += 1
@@ -105,6 +91,12 @@ class MainActivity : AppCompatActivity() {
                 }
             }.bindTo(::evenOnly)
         }.padding(10)
+
+        init {
+            statefulTest::counter of statefulTest triggers wrap(KCheckBox::text) {
+                "Even only counter $it"
+            } on chbEventOnly
+        }
     }
 
 //    private class InfixTest(context: Context) : KViewBox(context) {
