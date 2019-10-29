@@ -3,6 +3,7 @@ package net.globulus.kotlinui.demo
 import android.content.Context
 import android.os.Bundle
 import android.os.Handler
+import android.util.Log
 import android.view.Gravity
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -30,7 +31,7 @@ class MainActivity : AppCompatActivity() {
         val list = LandmarkList(this, ls.shuffled())
 
 //        setContentView(list)
-        setContentView(InfixTest(this))
+        setContentView(InfixTest(this, StatefulTest()))
 
         Handler().postDelayed({
 //            list.landmarks.removeIf { it.isFavorite }
@@ -54,18 +55,30 @@ class MainActivity : AppCompatActivity() {
 //        )
     }
 
-    class InfixTest(context: Context) : KViewBox(context) {
-
+    class StatefulTest : StatefulProducer {
+        var counter: Int by state(0)
         var input: String by state("Change me!")
+
+        override val stateful = Stateful.default {
+            Log.e("AAAAA", "Updated $this with $it")
+        }
+    }
+
+    class InfixTest(context: Context, statefulTest: StatefulTest) : KViewBox(context) {
+
         var buttonVisible: Boolean by state(true)
         var evenOnly: Boolean by state(false)
 
         override val root = rootColumn(Gravity.CENTER_HORIZONTAL) {
-            textField(::input).margins(0, 0, 0, 10)
+            textField(statefulTest::input).margins(0, 0, 0, 10)
             checkBox("Button visible", ::buttonVisible)
             checkBox("Even only", ::evenOnly)
-            button(::input) {
+                    .bindTo(statefulTest, statefulTest::counter, wrap(KCheckBox::text) {
+                        "Even only counter $it"
+                    })
+            button(statefulTest, statefulTest::input) {
                 Toast.makeText(context, "Tapped!", Toast.LENGTH_SHORT).show()
+                statefulTest.counter += 1
             }.widthWrapContent()
              .bindTo(::buttonVisible updates KButton::visible)
             list(listOf(1, 2, 3, 4)) {

@@ -127,3 +127,6 @@ class StateList<D, R: StatefulProducer, T: MutableList<D>>(
         return field.subList(fromIndex, toIndex)
     }
 }
+
+fun <D, R: StatefulProducer, T: MutableList<D>> R.stateList(field: T, property: KProperty<*>)
+        = StateList(this, field, property)

@@ -4,21 +4,17 @@ import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
-import io.reactivex.rxjava3.functions.Consumer
-import kotlin.reflect.KFunction
+import kotlin.reflect.KCallable
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty
-import kotlin.reflect.full.extensionReceiverParameter
 
 typealias OnClickListener<V> = (KView<V>) -> Unit
-
-private typealias BoundWritePropertiesMap = MutableMap<String, MutableList<KMutableProperty<*>>>
 
 abstract class KView<out V: View>(val context: Context) : Stateful, StatefulProducer {
 
     override val observables: ObservablesMap = mutableMapOf()
     override val observers: ObserversMap = mutableMapOf()
-    val boundWriteProperties: BoundWritePropertiesMap = mutableMapOf()
+    override val boundWriteProperties: BoundWritePropertiesMap = mutableMapOf()
 
     override val stateful: Stateful?
         get() = this
@@ -101,7 +97,7 @@ abstract class KView<out V: View>(val context: Context) : Stateful, StatefulProd
         }
     }
 
-    open fun <R> updateValue(r: R) { }
+    override fun <R> updateValue(r: R) { }
 
     protected fun removeAllChildren() {
         rootSuperParent?.let {
@@ -110,7 +106,7 @@ abstract class KView<out V: View>(val context: Context) : Stateful, StatefulProd
             }
             for ((_, v) in viewMap)
                 for ((_, observers) in it.observers) {
-                    observers.removeIf { o -> o.originalKView == v }
+                    observers.removeIf { o -> o.sender == v }
                 }
         }
         viewCounter = 0
@@ -132,37 +128,7 @@ fun <V:View, T: KView<V>> T.applyOnView(block: V.() -> Unit): T {
     return this
 }
 
-//@Suppress("UNCHECKED_CAST")
-//inline fun <reified T: KView> T.bound(): T {
-//    return Class.forName(T::class.java.name + FrameworkUtil.BOUND_SUFFIX)
-//            .getConstructor(Context::class.java, T::class.java)
-//            .newInstance(this.context, this) as T
-//}
-
-fun <P: KRootView<*>, T: KView<*>, R> T.bindTo(
-        root: P,
-        prop: KProperty<R>,
-        callback: KFunction<T>? = null
-): T {
-    val name = prop.name
-    if (root.observers[name] == null) {
-        root.observers[name] = mutableListOf()
-    }
-    root.observers[name]?.add(State.Observer(this, Consumer<R> {
-        if (callback != null) {
-            if (callback.extensionReceiverParameter == null) {
-                callback.call(it)
-            } else {
-                callback.call(this, it)
-            }
-        } else {
-            updateValue(it)
-        }
-    }))
-    return this
-}
-
-fun <T: KView<*>, R> T.bindTo(prop: KProperty<R>, callback: KFunction<T>? = null): T {
+fun <T: KView<*>, R> T.bindTo(prop: KProperty<R>, callback: KCallable<T>? = null): T {
     val root = rootSuperParent
             ?: throw IllegalStateException("${this} doesn\'t have a root super parent!")
     bindTo(root, prop, callback)
@@ -178,21 +144,12 @@ fun <T: KView<*>, R> T.bindTo(vararg props: KProperty<R>): T {
     return this
 }
 
-fun <T: KView<*>, R> T.bindTo(vararg pairs: Pair<KProperty<R>, KFunction<T>>): T {
+fun <T: KView<*>, R> T.bindTo(vararg pairs: Pair<KProperty<R>, KCallable<T>>): T {
     val root = rootSuperParent
             ?: throw IllegalStateException("${this} doesn\'t have a root super parent!")
     for (pair in pairs) {
         bindTo(root, pair.first, pair.second)
     }
-    return this
-}
-
-inline fun <T: KView<*>, reified R> T.bind(prop: KMutableProperty<R>): T {
-    val name = R::class.java.name
-    if (!boundWriteProperties.containsKey(name)) {
-        boundWriteProperties[name] = mutableListOf()
-    }
-    boundWriteProperties[name]?.add(prop)
     return this
 }
 
@@ -206,11 +163,11 @@ infix fun <T: KView<*>, R> KProperty<R>.updates(kView: T): T {
     return kView
 }
 
-infix fun <T: KView<*>, R, A: KProperty<R>, B: KFunction<T>> A.updates(method: B): Pair<A, B> {
+infix fun <T: KView<*>, R, A: KProperty<R>, B: KCallable<T>> A.updates(method: B): Pair<A, B> {
     return this to method
 }
 
-infix fun <T: KView<*>, R, A: KProperty<R>, B: KFunction<T>> Pair<A, B>.of(kView: T): T {
+infix fun <T: KView<*>, R, A: KProperty<R>, B: KCallable<T>> Pair<A, B>.of(kView: T): T {
     kView.bindTo(this)
     return kView
 }

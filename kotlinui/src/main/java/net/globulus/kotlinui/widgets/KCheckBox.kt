@@ -53,7 +53,7 @@ class KCheckBox(
         return this
     }
 
-    override fun text(resId: Int): KCheckBox {
+    override fun textRes(resId: Int): KCheckBox {
         view.setText(resId)
         return this
     }

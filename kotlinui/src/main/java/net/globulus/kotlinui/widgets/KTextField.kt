@@ -56,7 +56,7 @@ class KTextField(
         return this
     }
 
-    override fun text(resId: Int): KTextField {
+    override fun textRes(resId: Int): KTextField {
         view.setText(resId)
         return this
     }

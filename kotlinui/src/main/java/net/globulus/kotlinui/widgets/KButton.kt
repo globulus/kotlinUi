@@ -6,6 +6,7 @@ import androidx.annotation.StringRes
 import androidx.annotation.StyleRes
 import net.globulus.kotlinui.KView
 import net.globulus.kotlinui.OnClickListener
+import net.globulus.kotlinui.StatefulProducer
 import net.globulus.kotlinui.bindTo
 import net.globulus.kotlinui.traits.TextContainer
 import kotlin.reflect.KProperty
@@ -42,7 +43,7 @@ class KButton(
         return this
     }
 
-    override fun text(resId: Int): KButton {
+    override fun textRes(resId: Int): KButton {
         view.setText(resId)
         return this
     }
@@ -58,14 +59,20 @@ class KButton(
     }
 }
 
-fun <T: KView<*>> T.button(@StringRes resId: Int, l: OnClickListener<Button>?): KButton {
+fun <T: KView<*>> T.button(@StringRes resId: Int, l: OnClickListener<Button>? = null): KButton {
     return add(KButton(context, resId, null, 0, l))
 }
 
-fun <T: KView<*>> T. button(text: String?, l: OnClickListener<Button>?): KButton {
+fun <T: KView<*>> T. button(text: String? = null, l: OnClickListener<Button>? = null): KButton {
     return add(KButton(context, 0, text, 0, l))
 }
 
-fun <T: KView<*>> T. button(prop: KProperty<String>, l: OnClickListener<Button>?): KButton {
+fun <T: KView<*>> T. button(prop: KProperty<String>, l: OnClickListener<Button>? = null): KButton {
     return button(prop.getter.call(), l).bindTo(prop)
+}
+
+fun <P: StatefulProducer, T: KView<*>> T. button(root: P,
+                                                 prop: KProperty<String>,
+                                                 l: OnClickListener<Button>? = null): KButton {
+    return button(prop.getter.call(), l).bindTo(root, prop)
 }

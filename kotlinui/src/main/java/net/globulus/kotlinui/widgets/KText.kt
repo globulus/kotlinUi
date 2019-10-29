@@ -5,6 +5,7 @@ import android.widget.TextView
 import androidx.annotation.StringRes
 import androidx.annotation.StyleRes
 import net.globulus.kotlinui.KView
+import net.globulus.kotlinui.StatefulProducer
 import net.globulus.kotlinui.bindTo
 import net.globulus.kotlinui.traits.TextContainer
 import kotlin.reflect.KProperty
@@ -33,7 +34,7 @@ class KText(
         return this
     }
 
-    override fun text(resId: Int): KText {
+    override fun textRes(resId: Int): KText {
         view.setText(resId)
         return this
     }
@@ -59,4 +60,8 @@ fun <T: KView<*>> T.text(text: String? = null): KText {
 
 fun <T: KView<*>> T.text(prop: KProperty<String>): KText {
     return text(prop.getter.call()).bindTo(prop)
+}
+
+fun <P: StatefulProducer, T: KView<*>> T.text(root: P, prop: KProperty<String>): KText {
+    return text(prop.getter.call()).bindTo(root, prop)
 }
