@@ -3,7 +3,7 @@ package net.globulus.kotlinui
 import java.util.function.Predicate
 import kotlin.reflect.KProperty
 
-open class StateCollection<D, R: KViewProducer, T: MutableCollection<D>>(
+open class StateCollection<D, R: StatefulProducer, T: MutableCollection<D>>(
         override val producer: R,
         protected val field: T,
         private val property: KProperty<*>
@@ -73,11 +73,11 @@ open class StateCollection<D, R: KViewProducer, T: MutableCollection<D>>(
 
     protected fun notifyObservers() {
         updateObservable(property)
-        producer.kView?.triggerObserver(property.name, field)
+        producer.stateful?.triggerObserver(property.name, field)
     }
 }
 
-class StateList<D, R: KViewProducer, T: MutableList<D>>(
+class StateList<D, R: StatefulProducer, T: MutableList<D>>(
         kview: R,
         field: T,
         property: KProperty<*>

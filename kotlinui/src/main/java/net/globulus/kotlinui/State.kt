@@ -1,13 +1,52 @@
 package net.globulus.kotlinui
 
+import io.reactivex.rxjava3.functions.Consumer
 import io.reactivex.rxjava3.subjects.BehaviorSubject
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-interface State<R: KViewProducer, T> : ReadWriteProperty<R, T>, UpdatesObservable<R, T>
+typealias ObservablesMap = MutableMap<String, State.Observable<*>>
+typealias ObserversMap = MutableMap<String, MutableList<State.Observer<*>>>
 
-class NullableState<R: KViewProducer, T>(override val producer: R) : State<R, T?> {
+interface Stateful {
+    val observables: ObservablesMap
+    val observers: ObserversMap
 
+    @Suppress("UNCHECKED_CAST")
+    fun <T> triggerObserver(key: String, value: T) {
+        observables[key]?.let { observable ->
+            val bs = observable.behaviorSubject as BehaviorSubject<T>
+            if (!observable.bound) {
+                observable.bound = true
+//                bindChildren()
+                observers[key]?.let { observers ->
+                    for (c in observers) {
+                        bs.subscribe(c.consumer as Consumer<T>)
+                    }
+                }
+            }
+            bs.onNext(value)
+        }
+    }
+}
+
+interface StatefulProducer {
+    val stateful: Stateful?
+}
+
+interface State<R: StatefulProducer, T> : ReadWriteProperty<R, T>, UpdatesObservable<R, T> {
+    data class Observable<T>(
+            val behaviorSubject: BehaviorSubject<T>,
+            var bound: Boolean = false
+    )
+
+    data class Observer<R>(
+            val originalKView: KView<*>,
+            val consumer: Consumer<R>
+    )
+}
+
+class NullableState<R: StatefulProducer, T>(override val producer: R) : State<R, T?> {
     private var field: T? = null
     override var updatedObservable = false
 
@@ -19,12 +58,11 @@ class NullableState<R: KViewProducer, T>(override val producer: R) : State<R, T?
     override fun setValue(thisRef: R, property: KProperty<*>, value: T?) {
         updateObservable(property)
         field = value
-        producer.kView?.triggerObserver(property.name, field)
+        producer.stateful?.triggerObserver(property.name, field)
     }
 }
 
-class NonNullState<R: KViewProducer, T: Any>(override val producer: R) : State<R, T> {
-
+class NonNullState<R: StatefulProducer, T: Any>(override val producer: R) : State<R, T> {
     private lateinit var field: T
     override var updatedObservable = false
 
@@ -40,12 +78,11 @@ class NonNullState<R: KViewProducer, T: Any>(override val producer: R) : State<R
     override fun setValue(thisRef: R, property: KProperty<*>, value: T) {
         updateObservable(property)
         field = value
-        producer.kView?.triggerObserver(property.name, field)
+        producer.stateful?.triggerObserver(property.name, field)
     }
 }
 
-interface UpdatesObservable<R: KViewProducer, T> {
-
+interface UpdatesObservable<R: StatefulProducer, T> {
     val producer: R
     var updatedObservable: Boolean
 
@@ -53,12 +90,18 @@ interface UpdatesObservable<R: KViewProducer, T> {
         if (updatedObservable) {
             return
         }
-        producer.kView?.let {
+        producer.stateful?.let {
             updatedObservable = true
             val name = property.name
             if (!it.observables.containsKey(name)) {
-                it.observables[name] = KView.Observable(BehaviorSubject.create<T>())
+                it.observables[name] = State.Observable(BehaviorSubject.create<T>())
             }
         }
     }
 }
+
+fun <R: StatefulProducer, T: Any> R.state() = NonNullState<R, T>(this)
+fun <R: StatefulProducer, T: Any> R.state(initialValue: T) = NonNullState(this, initialValue)
+fun <R: StatefulProducer, T> R.optionalState() = NullableState<R, T>(this)
+fun <D, R: StatefulProducer, T: MutableList<D>> R.stateList(field: T, property: KProperty<*>)
+        = StateList(this, field, property)

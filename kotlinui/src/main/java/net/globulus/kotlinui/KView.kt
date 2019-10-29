@@ -5,7 +5,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import io.reactivex.rxjava3.functions.Consumer
-import io.reactivex.rxjava3.subjects.BehaviorSubject
 import kotlin.reflect.KFunction
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty
@@ -13,15 +12,16 @@ import kotlin.reflect.full.extensionReceiverParameter
 
 typealias OnClickListener<V> = (KView<V>) -> Unit
 
-private typealias ObservablesMap = MutableMap<String, KView.Observable<*>>
-private typealias ObserversMap = MutableMap<String, MutableList<KView.Observer<*>>>
 private typealias BoundWritePropertiesMap = MutableMap<String, MutableList<KMutableProperty<*>>>
 
-abstract class KView<out V: View>(val context: Context) : KViewProducer {
+abstract class KView<out V: View>(val context: Context) : Stateful, StatefulProducer {
 
-    val observables: ObservablesMap = mutableMapOf()
-    val observers: ObserversMap = mutableMapOf()
+    override val observables: ObservablesMap = mutableMapOf()
+    override val observers: ObserversMap = mutableMapOf()
     val boundWriteProperties: BoundWritePropertiesMap = mutableMapOf()
+
+    override val stateful: Stateful?
+        get() = this
 
     abstract val view: V
 
@@ -53,9 +53,6 @@ abstract class KView<out V: View>(val context: Context) : KViewProducer {
             }
         }
 
-    override val kView
-        get() = this
-
     protected open fun addView(v: View) { }
 
     fun <T: View> add(v: T): T {
@@ -81,23 +78,6 @@ abstract class KView<out V: View>(val context: Context) : KViewProducer {
             it.put(id, this)
         }
         return this
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    fun <T> triggerObserver(key: String, value: T) {
-        observables[key]?.let { observable ->
-            val bs = observable.behaviorSubject as BehaviorSubject<T>
-            if (!observable.bound) {
-                observable.bound = true
-//                bindChildren()
-                observers[key]?.let { observers ->
-                    for (c in observers) {
-                        bs.subscribe(c.consumer as Consumer<T>)
-                    }
-                }
-            }
-            bs.onNext(value)
-        }
     }
 
 //    fun bindChildren(kviews: Collection<KView<*>>? = null) {
@@ -136,16 +116,6 @@ abstract class KView<out V: View>(val context: Context) : KViewProducer {
         viewCounter = 0
         viewMap.clear()
     }
-
-    data class Observable<T>(
-            val behaviorSubject: BehaviorSubject<T>,
-            var bound: Boolean = false
-    )
-
-    data class Observer<R>(
-            val originalKView: KView<*>,
-            val consumer: Consumer<R>
-    )
 }
 
 fun <V: View> kview(context: Context, block: KView<V>.() -> KView<V>): KView<V> {
@@ -178,7 +148,7 @@ fun <P: KRootView<*>, T: KView<*>, R> T.bindTo(
     if (root.observers[name] == null) {
         root.observers[name] = mutableListOf()
     }
-    root.observers[name]?.add(KView.Observer(this, Consumer<R> {
+    root.observers[name]?.add(State.Observer(this, Consumer<R> {
         if (callback != null) {
             if (callback.extensionReceiverParameter == null) {
                 callback.call(it)
@@ -250,12 +220,6 @@ fun <T: KView<*>> T.id(prop: KMutableProperty<T>): T {
     prop.setter.call(this)
     return id(prop.name) as T
 }
-
-fun <R: KViewProducer, T: Any> R.state() = NonNullState<R, T>(this)
-fun <R: KViewProducer, T: Any> R.state(initialValue: T) = NonNullState(this, initialValue)
-fun <R: KViewProducer, T> R.optionalState() = NullableState<R, T>(this)
-fun <D, R: KViewProducer, T: MutableList<D>> R.stateList(field: T, property: KProperty<*>)
-        = StateList(this, field, property)
 
 fun <T: KView<*>> T.frame(width: Int, height: Int): T {
     return apply {
