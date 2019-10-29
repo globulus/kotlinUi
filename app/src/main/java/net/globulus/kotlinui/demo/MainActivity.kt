@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.util.Log
 import android.view.Gravity
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.gson.Gson
@@ -31,7 +32,13 @@ class MainActivity : AppCompatActivity() {
         val list = LandmarkList(this, ls.shuffled())
 
 //        setContentView(list)
-        setContentView(InfixTest(this, StatefulTest()))
+        val statefulTest = StatefulTest()
+        setContentView(kview<View>(this) {
+            column {
+                add(CounterView(this@MainActivity, statefulTest))
+                add(InfixTest(this@MainActivity, statefulTest).view)
+            }
+        }.view)
 
         Handler().postDelayed({
 //            list.landmarks.removeIf { it.isFavorite }
@@ -64,6 +71,15 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    class CounterView(context: Context, statefulTest: StatefulTest) : KView<View>(context) {
+        override val view = row {
+            text("Counter is ${statefulTest.counter}")
+            space()
+            text("Input is ${statefulTest.input}")
+        }.bindTo(statefulTest)
+                .view
+    }
+
     class InfixTest(context: Context, statefulTest: StatefulTest) : KViewBox(context) {
 
         var buttonVisible: Boolean by state(true)
@@ -73,10 +89,10 @@ class MainActivity : AppCompatActivity() {
             textField(statefulTest::input).margins(0, 0, 0, 10)
             checkBox("Button visible", ::buttonVisible)
             checkBox("Even only", ::evenOnly)
-                    .bindTo(statefulTest, statefulTest::counter, wrap(KCheckBox::text) {
-                        "Even only counter $it"
-                    })
-            button(statefulTest, statefulTest::input) {
+//                    .bindTo(statefulTest, statefulTest::counter, wrap(KCheckBox::text) {
+//                        "Even only counter $it"
+//                    })
+            button("Increment") {
                 Toast.makeText(context, "Tapped!", Toast.LENGTH_SHORT).show()
                 statefulTest.counter += 1
             }.widthWrapContent()
