@@ -6,6 +6,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import kotlin.reflect.KCallable
+import kotlin.reflect.KFunction
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty
 
@@ -172,6 +173,10 @@ infix fun <T: KView<*>, R> KProperty<R>.updates(kView: T): T {
 
 infix fun <T: KView<*>, R, A: KProperty<R>, B: StatefulProducer, C: KCallable<T>> Pair<A, B>.triggers(callable: C): Triple<A, B, C> {
     return Triple(first, second, callable)
+}
+
+infix fun <T: KView<*>, R, A: KProperty<R>, B: StatefulProducer, C: KFunction<T>> Triple<A, B, C>.via(wrapper: (Any?) -> Any?): Triple<A, B, FunctionWrapper<T>> {
+    return Triple(first, second, FunctionWrapper(third, wrapper))
 }
 
 infix fun <T: KView<*>, R, A: KProperty<R>, B: KCallable<T>> A.updates(method: B) = this to method

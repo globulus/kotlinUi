@@ -15,11 +15,15 @@ import net.globulus.kotlinui.traits.TextContainer
 import java.util.concurrent.TimeUnit
 import kotlin.reflect.KMutableProperty
 
+private typealias KTextFieldBlock = (KTextField.() -> Unit)?
+private const val DEFAULT_STYLE = android.R.style.Widget_EditText
+
 class KTextField(
         context: Context,
         @StringRes resId: Int,
         text: String? = null,
-        @StyleRes style: Int = android.R.style.Widget_EditText
+        @StyleRes style: Int = DEFAULT_STYLE,
+        block: KTextFieldBlock = null
 ) : KView<EditText>(context), TextContainer<KTextField> {
 
     private val changePublishSubject = PublishRelay.create<String>().apply {
@@ -49,6 +53,10 @@ class KTextField(
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) { }
         })
+    }
+
+    init {
+        block?.invoke(this)
     }
 
     override fun text(text: String?): KTextField {
@@ -81,14 +89,14 @@ class KTextField(
     }
 }
 
-fun <T: KView<*>> T.textField(@StringRes resId: Int): KTextField {
-    return add(KTextField(context, resId, null))
+fun <T: KView<*>> T.textField(@StringRes resId: Int, block: KTextFieldBlock = null): KTextField {
+    return add(KTextField(context, resId, null, DEFAULT_STYLE, block))
 }
 
-fun <T: KView<*>> T.textField(text: String? = null): KTextField {
-    return add(KTextField(context, 0, text))
+fun <T: KView<*>> T.textField(text: String? = null, block: KTextFieldBlock = null): KTextField {
+    return add(KTextField(context, 0, text, DEFAULT_STYLE, block))
 }
 
-fun <T: KView<*>> T.textField(prop: KMutableProperty<String>): KTextField {
-    return textField(prop.getter.call()).bind(prop)
+fun <T: KView<*>> T.textField(prop: KMutableProperty<String>, block: KTextFieldBlock = null): KTextField {
+    return textField(prop.getter.call(), block).bind(prop)
 }

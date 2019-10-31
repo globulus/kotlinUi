@@ -11,11 +11,13 @@ import net.globulus.kotlinui.bindTo
 import net.globulus.kotlinui.traits.TextContainer
 import kotlin.reflect.KProperty
 
+private const val DEFAULT_STYLE = 0
+
 class KButton(
         context: Context,
         @StringRes resId: Int,
         text: String? = null,
-        @StyleRes style: Int = 0,
+        @StyleRes style: Int = DEFAULT_STYLE,
         l: OnClickListener<Button>?
 ) : KView<Button>(context), TextContainer<KButton> {
 

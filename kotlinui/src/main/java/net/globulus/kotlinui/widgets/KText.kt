@@ -10,11 +10,16 @@ import net.globulus.kotlinui.bindTo
 import net.globulus.kotlinui.traits.TextContainer
 import kotlin.reflect.KProperty
 
+
+private typealias KTextBlock = (KText.() -> Unit)?
+private const val DEFAULT_STYLE = 0
+
 class KText(
         context: Context,
         @StringRes resId: Int,
         text: String? = null,
-        @StyleRes style: Int = 0
+        @StyleRes style: Int = 0,
+        block: KTextBlock = null
 ) : KView<TextView>(context), TextContainer<KText> {
 
     override val view = TextView(context, null, 0, style).apply {
@@ -23,6 +28,10 @@ class KText(
         } else {
             this.text = text
         }
+    }
+
+    init {
+        block?.invoke(this)
     }
 
     override fun <R> updateValue(r: R) {
@@ -50,18 +59,18 @@ class KText(
     }
 }
 
-fun <T: KView<*>> T.text(@StringRes resId: Int): KText {
-    return add(KText(context, resId))
+fun <T: KView<*>> T.text(@StringRes resId: Int, block: KTextBlock = null): KText {
+    return add(KText(context, resId, null, DEFAULT_STYLE, block))
 }
 
-fun <T: KView<*>> T.text(text: String? = null): KText {
-    return add(KText(context, 0, text))
+fun <T: KView<*>> T.text(text: String? = null, block: KTextBlock = null): KText {
+    return add(KText(context, 0, text, DEFAULT_STYLE, block))
 }
 
-fun <T: KView<*>> T.text(prop: KProperty<String>): KText {
-    return text(prop.getter.call()).bindTo(prop)
+fun <T: KView<*>> T.text(prop: KProperty<String>, block: KTextBlock = null): KText {
+    return text(prop.getter.call(), block).bindTo(prop)
 }
 
-fun <P: StatefulProducer, T: KView<*>> T.text(root: P, prop: KProperty<String>): KText {
-    return text(prop.getter.call()).bindTo(root, prop)
+fun <P: StatefulProducer, T: KView<*>> T.text(root: P, prop: KProperty<String>, block: KTextBlock = null): KText {
+    return text(prop.getter.call(), block).bindTo(root, prop)
 }

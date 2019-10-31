@@ -8,7 +8,7 @@ import kotlin.reflect.full.instanceParameter
 
 data class FunctionWrapper<R>(
         val function: KFunction<R>,
-        val wrapper: (arg: Any?) -> Any
+        val wrapper: (arg: Any?) -> Any?
 ) : KCallable<R> {
     override val annotations = function.annotations
     override val isAbstract = function.isAbstract
@@ -39,4 +39,4 @@ data class FunctionWrapper<R>(
     }
 }
 
-fun <R> wrap(f: KFunction<R>, wrapper: (arg: Any?) -> Any) = FunctionWrapper(f, wrapper)
+fun <R> wrap(f: KFunction<R>, wrapper: (arg: Any?) -> Any?) = FunctionWrapper(f, wrapper)

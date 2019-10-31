@@ -35,8 +35,8 @@ class MainActivity : AppCompatActivity() {
         val statefulTest = StatefulTest()
         setContentView(this) {
             column {
-                add(CounterView(this@MainActivity, statefulTest))
-                add(InfixTest(this@MainActivity, statefulTest))
+                add(CounterView(context, statefulTest))
+                add(InfixTest(context, statefulTest))
             }
         }
 
@@ -75,9 +75,9 @@ class MainActivity : AppCompatActivity() {
             textField(statefulTest::input).margins(0, 0, 0, 10)
             checkBox("Button visible", ::buttonVisible)
             chbEventOnly = checkBox("Even only", ::evenOnly)
-                    .bindTo(statefulTest, statefulTest::counter, wrap(KCheckBox::text) {
-                        "Even only counter $it"
-                    })
+//                    .bindTo(statefulTest, statefulTest::counter, wrap(KCheckBox::text) {
+//                        "Even only counter $it"
+//                    })
             button("Increment") {
                 Toast.makeText(context, "Tapped!", Toast.LENGTH_SHORT).show()
                 statefulTest.counter += 1
@@ -93,9 +93,7 @@ class MainActivity : AppCompatActivity() {
         }.padding(10)
 
         init {
-            statefulTest::counter of statefulTest triggers wrap(KCheckBox::text) {
-                "Even only counter $it"
-            } on chbEventOnly
+            statefulTest::counter of statefulTest triggers KCheckBox::text via { "Even only counter $it" } on chbEventOnly
         }
     }
 
