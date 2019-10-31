@@ -225,16 +225,16 @@ class ExternalObserved : StatefulProducer {
 Here's an example of two distinct KViews, both bound to the same ExternalObserved instance. The first one observes the state and is refreshed whenever a property of ExternalObserved is changed, while the other one changes the property on button click:
 
 ```kotlin
-class CounterView(context: Context, external: ExternalObserved) : KView<View>(context) {
+class CounterView(context: Context, ext: ExternalObserved) : KView<View>(context) {
     override val view = row {
-        text("Counter is ${external.counter}")
+        text("Counter is ${ext.counter}")
         space()
-        text("Input is ${external.input}")
-    }.bindTo(external)
+        text("Input is ${ext.input}")
+    }.bindTo(ext)
             .view
 }
     
-class CounterUpdater(context: Context, external: ExternalObserved) : KViewBox(context) {
+class CounterUpdater(context: Context, ext: ExternalObserved) : KViewBox(context) {
         override val root = rootColumn(Gravity.CENTER_HORIZONTAL) {
      button("Increment")
    }.padding(10)
@@ -243,11 +243,11 @@ class CounterUpdater(context: Context, external: ExternalObserved) : KViewBox(co
 ...
 // In your Activity
 ...
-val external = ExternalObserved()
+val ext = ExternalObserved()
 setContentView(this) {
     column {
-        add(CounterView(context, external))
-        add(CounterUpdater(context, external))
+        add(CounterView(context, ext))
+        add(CounterUpdater(context, ext))
     }
 }
 ```
@@ -255,9 +255,9 @@ setContentView(this) {
 You can also bind directly to an external object's properties:
 
 ```kotlin
-button().bindTo(external, external::input)
+button().bindTo(ext, ext::input)
 chbEventOnly = checkBox("Even only", ::evenOnly)
-                    .bindTo(statefulTest, statefulTest::counter, wrap(KCheckBox::text) {
+                    .bindTo(ext, ext::counter, wrap(KCheckBox::text) {
     "Even only counter $it"                  
   })
 ```
@@ -331,7 +331,7 @@ For fun's sake, there's also this gem that's, hopefully, self-explanatory:
 
 ```kotlin
 init {
-    external::counter of external triggers KCheckBox::text via { "Even only counter $it" } on chbEventOnly
+    ext::counter of ext triggers KCheckBox::text via { "Even only counter $it" } on chbEventOnly
 }
 ```
 
