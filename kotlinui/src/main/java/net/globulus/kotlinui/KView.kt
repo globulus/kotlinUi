@@ -1,27 +1,25 @@
 package net.globulus.kotlinui
 
+import android.app.Activity
 import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
-import io.reactivex.rxjava3.functions.Consumer
-import io.reactivex.rxjava3.subjects.BehaviorSubject
+import kotlin.reflect.KCallable
 import kotlin.reflect.KFunction
 import kotlin.reflect.KMutableProperty
 import kotlin.reflect.KProperty
-import kotlin.reflect.full.extensionReceiverParameter
 
 typealias OnClickListener<V> = (KView<V>) -> Unit
 
-private typealias ObservablesMap = MutableMap<String, KView.Observable<*>>
-private typealias ObserversMap = MutableMap<String, MutableList<KView.Observer<*>>>
-private typealias BoundWritePropertiesMap = MutableMap<String, MutableList<KMutableProperty<*>>>
+abstract class KView<out V: View>(val context: Context) : Stateful, StatefulProducer {
 
-abstract class KView<out V: View>(val context: Context) : KViewProducer {
+    override val observables: ObservablesMap = mutableMapOf()
+    override val observers: ObserversMap = mutableMapOf()
+    override val boundWriteProperties: BoundWritePropertiesMap = mutableMapOf()
 
-    val observables: ObservablesMap = mutableMapOf()
-    val observers: ObserversMap = mutableMapOf()
-    val boundWriteProperties: BoundWritePropertiesMap = mutableMapOf()
+    override val stateful: Stateful?
+        get() = this
 
     abstract val view: V
 
@@ -53,9 +51,6 @@ abstract class KView<out V: View>(val context: Context) : KViewProducer {
             }
         }
 
-    override val kView
-        get() = this
-
     protected open fun addView(v: View) { }
 
     fun <T: View> add(v: T): T {
@@ -73,6 +68,10 @@ abstract class KView<out V: View>(val context: Context) : KViewProducer {
         return v
     }
 
+    fun <T: KViewBox> add(box: T): View {
+        return add(box.view)
+    }
+
     fun id(id: String): KView<V>  {
         val oldId = this.id
         this.id = id
@@ -81,23 +80,6 @@ abstract class KView<out V: View>(val context: Context) : KViewProducer {
             it.put(id, this)
         }
         return this
-    }
-
-    @Suppress("UNCHECKED_CAST")
-    fun <T> triggerObserver(key: String, value: T) {
-        observables[key]?.let { observable ->
-            val bs = observable.behaviorSubject as BehaviorSubject<T>
-            if (!observable.bound) {
-                observable.bound = true
-//                bindChildren()
-                observers[key]?.let { observers ->
-                    for (c in observers) {
-                        bs.subscribe(c.consumer as Consumer<T>)
-                    }
-                }
-            }
-            bs.onNext(value)
-        }
     }
 
 //    fun bindChildren(kviews: Collection<KView<*>>? = null) {
@@ -121,7 +103,7 @@ abstract class KView<out V: View>(val context: Context) : KViewProducer {
         }
     }
 
-    open fun <R> updateValue(r: R) { }
+    override fun <R> updateValue(r: R) { }
 
     protected fun removeAllChildren() {
         rootSuperParent?.let {
@@ -130,22 +112,16 @@ abstract class KView<out V: View>(val context: Context) : KViewProducer {
             }
             for ((_, v) in viewMap)
                 for ((_, observers) in it.observers) {
-                    observers.removeIf { o -> o.originalKView == v }
+                    observers.removeIf { o -> o.sender == v }
                 }
         }
         viewCounter = 0
         viewMap.clear()
     }
+}
 
-    data class Observable<T>(
-            val behaviorSubject: BehaviorSubject<T>,
-            var bound: Boolean = false
-    )
-
-    data class Observer<R>(
-            val originalKView: KView<*>,
-            val consumer: Consumer<R>
-    )
+fun Activity.setContentView(context: Context, block: KView<View>.() -> KView<View>) {
+    setContentView(kview(context, block).view)
 }
 
 fun <V: View> kview(context: Context, block: KView<V>.() -> KView<V>): KView<V> {
@@ -155,44 +131,12 @@ fun <V: View> kview(context: Context, block: KView<V>.() -> KView<V>): KView<V> 
     }
 }
 
-fun <V: View> kview_(context: Context, block: KView<V>.() -> KView<V>) = kview(context, block)
-
 fun <V:View, T: KView<V>> T.applyOnView(block: V.() -> Unit): T {
     this.view.apply(block)
     return this
 }
 
-//@Suppress("UNCHECKED_CAST")
-//inline fun <reified T: KView> T.bound(): T {
-//    return Class.forName(T::class.java.name + FrameworkUtil.BOUND_SUFFIX)
-//            .getConstructor(Context::class.java, T::class.java)
-//            .newInstance(this.context, this) as T
-//}
-
-fun <P: KRootView<*>, T: KView<*>, R> T.bindTo(
-        root: P,
-        prop: KProperty<R>,
-        callback: KFunction<T>? = null
-): T {
-    val name = prop.name
-    if (root.observers[name] == null) {
-        root.observers[name] = mutableListOf()
-    }
-    root.observers[name]?.add(KView.Observer(this, Consumer<R> {
-        if (callback != null) {
-            if (callback.extensionReceiverParameter == null) {
-                callback.call(it)
-            } else {
-                callback.call(this, it)
-            }
-        } else {
-            updateValue(it)
-        }
-    }))
-    return this
-}
-
-fun <T: KView<*>, R> T.bindTo(prop: KProperty<R>, callback: KFunction<T>? = null): T {
+fun <T: KView<*>, R> T.bindTo(prop: KProperty<R>, callback: KCallable<T>? = null): T {
     val root = rootSuperParent
             ?: throw IllegalStateException("${this} doesn\'t have a root super parent!")
     bindTo(root, prop, callback)
@@ -208,21 +152,12 @@ fun <T: KView<*>, R> T.bindTo(vararg props: KProperty<R>): T {
     return this
 }
 
-fun <T: KView<*>, R> T.bindTo(vararg pairs: Pair<KProperty<R>, KFunction<T>>): T {
+fun <T: KView<*>, R> T.bindTo(vararg pairs: Pair<KProperty<R>, KCallable<T>>): T {
     val root = rootSuperParent
             ?: throw IllegalStateException("${this} doesn\'t have a root super parent!")
     for (pair in pairs) {
         bindTo(root, pair.first, pair.second)
     }
-    return this
-}
-
-inline fun <T: KView<*>, reified R> T.bind(prop: KMutableProperty<R>): T {
-    val name = R::class.java.name
-    if (!boundWriteProperties.containsKey(name)) {
-        boundWriteProperties[name] = mutableListOf()
-    }
-    boundWriteProperties[name]?.add(prop)
     return this
 }
 
@@ -236,13 +171,25 @@ infix fun <T: KView<*>, R> KProperty<R>.updates(kView: T): T {
     return kView
 }
 
-infix fun <T: KView<*>, R, A: KProperty<R>, B: KFunction<T>> A.updates(method: B): Pair<A, B> {
-    return this to method
+infix fun <T: KView<*>, R, A: KProperty<R>, B: StatefulProducer, C: KCallable<T>> Pair<A, B>.triggers(callable: C): Triple<A, B, C> {
+    return Triple(first, second, callable)
 }
 
-infix fun <T: KView<*>, R, A: KProperty<R>, B: KFunction<T>> Pair<A, B>.of(kView: T): T {
+infix fun <T: KView<*>, R, A: KProperty<R>, B: StatefulProducer, C: KFunction<T>> Triple<A, B, C>.via(wrapper: (Any?) -> Any?): Triple<A, B, FunctionWrapper<T>> {
+    return Triple(first, second, FunctionWrapper(third, wrapper))
+}
+
+infix fun <T: KView<*>, R, A: KProperty<R>, B: KCallable<T>> A.updates(method: B) = this to method
+
+infix fun <R, A: KProperty<R>, B: StatefulProducer> A.of(producer: B) = this to producer
+
+infix fun <T: KView<*>, R, A: KProperty<R>, B: KCallable<T>> Pair<A, B>.of(kView: T): T {
     kView.bindTo(this)
     return kView
+}
+
+infix fun <T: KView<*>, R, A: KProperty<R>, B: StatefulProducer, C: KCallable<T>> Triple<A, B, C>.on(kView: T): T {
+    return kView.bindTo(second, first, third)
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -250,12 +197,6 @@ fun <T: KView<*>> T.id(prop: KMutableProperty<T>): T {
     prop.setter.call(this)
     return id(prop.name) as T
 }
-
-fun <R: KViewProducer, T: Any> R.state() = NonNullState<R, T>(this)
-fun <R: KViewProducer, T: Any> R.state(initialValue: T) = NonNullState(this, initialValue)
-fun <R: KViewProducer, T> R.optionalState() = NullableState<R, T>(this)
-fun <D, R: KViewProducer, T: MutableList<D>> R.stateList(field: T, property: KProperty<*>)
-        = StateList(this, field, property)
 
 fun <T: KView<*>> T.frame(width: Int, height: Int): T {
     return apply {

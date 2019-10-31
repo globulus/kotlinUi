@@ -3,7 +3,9 @@ package net.globulus.kotlinui.demo
 import android.content.Context
 import android.os.Bundle
 import android.os.Handler
+import android.util.Log
 import android.view.Gravity
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.gson.Gson
@@ -30,42 +32,55 @@ class MainActivity : AppCompatActivity() {
         val list = LandmarkList(this, ls.shuffled())
 
 //        setContentView(list)
-        setContentView(InfixTest(this))
+        val statefulTest = StatefulTest()
+        setContentView(this) {
+            column {
+                add(CounterView(context, statefulTest))
+                add(InfixTest(context, statefulTest))
+            }
+        }
 
         Handler().postDelayed({
 //            list.landmarks.removeIf { it.isFavorite }
 //            list.list.visible(false)
         }, 4000)
-
-
-//        list = LandmarkList(this, landmarks)
-//        val kv = Kv(this)
-//        root.addView(
-//                list.view
-////                kv.view
-////        kview(this) {
-////            column {
-////                text(R.string.label_1)
-////                button(R.string.button_1) {
-////                    Toast.makeText(this@MainActivity, getString(R.string.button_1), Toast.LENGTH_LONG).show()
-////                }
-////            }
-////        }
-//        )
     }
 
-    class InfixTest(context: Context) : KViewBox(context) {
-
+    class StatefulTest : StatefulProducer {
+        var counter: Int by state(0)
         var input: String by state("Change me!")
+
+        override val stateful = Stateful.default {
+            Log.e("AAAAA", "Updated $this with $it")
+        }
+    }
+
+    class CounterView(context: Context, statefulTest: StatefulTest) : KView<View>(context) {
+        override val view = row {
+            text("Counter is ${statefulTest.counter}")
+            space()
+            text("Input is ${statefulTest.input}")
+        }.bindTo(statefulTest)
+                .view
+    }
+
+    class InfixTest(context: Context, statefulTest: StatefulTest) : KViewBox(context) {
+
         var buttonVisible: Boolean by state(true)
         var evenOnly: Boolean by state(false)
 
+        lateinit var chbEventOnly: KCheckBox
+
         override val root = rootColumn(Gravity.CENTER_HORIZONTAL) {
-            textField(::input).margins(0, 0, 0, 10)
+            textField(statefulTest::input).margins(0, 0, 0, 10)
             checkBox("Button visible", ::buttonVisible)
-            checkBox("Even only", ::evenOnly)
-            button(::input) {
+            chbEventOnly = checkBox("Even only", ::evenOnly)
+//                    .bindTo(statefulTest, statefulTest::counter, wrap(KCheckBox::text) {
+//                        "Even only counter $it"
+//                    })
+            button("Increment") {
                 Toast.makeText(context, "Tapped!", Toast.LENGTH_SHORT).show()
+                statefulTest.counter += 1
             }.widthWrapContent()
              .bindTo(::buttonVisible updates KButton::visible)
             list(listOf(1, 2, 3, 4)) {
@@ -76,6 +91,10 @@ class MainActivity : AppCompatActivity() {
                 }
             }.bindTo(::evenOnly)
         }.padding(10)
+
+        init {
+            statefulTest::counter of statefulTest triggers KCheckBox::text via { "Even only counter $it" } on chbEventOnly
+        }
     }
 
 //    private class InfixTest(context: Context) : KViewBox(context) {

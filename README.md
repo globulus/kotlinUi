@@ -131,6 +131,23 @@ text(R.string.initial_text).bindTo(::showText updates KText::visible, ::textCont
 
 Note - bindTo on a *KStack* (*Column* or *Row*) will re-render its entire content.
 
+
+###### Wrapping bound methods
+
+Despite binding methods not being type-safe at compile time, type-checking is performed at runtime, and your app might crash if the method receives a parameter of the wrong type, e.g if a *visible* method receives a non-Boolean param, or *text* a non-String one.
+
+There's also the occasional need to transform a bound param's value into something else.
+
+All of this can be done by **wrapping** a method. Consider a KText bound to an Int property that displays a counter. We can use the *wrap* function to transform the counter into a user-facing string:
+
+```kotlin
+var counter: Int by state(0)
+
+...
+text(R.string.initial_text).bindTo(::counter updates wrap(KText::text) { "The counter value is $it" })
+...
+```
+
 ##### State collections and lists
 
 The KotlinUi lib provides two classes, *StateCollection* and *StateList*, that represent a mutable collection and list, respectively, that **updates its bound KViews when its content changes**. E.g, when a *StateList*'s *add* or *remove* methods are called (or any other mutating method), its bound KViews will be notified of the change.
@@ -187,6 +204,63 @@ Here's a quick reference of basic widgets and their convenience binder methods:
 | list<D>       | bindTo | List<D> |
 | text          | bindTo | String  |
 | textField     | bind   | Boolean |
+
+#### Binding to *Stateful* objects
+
+Instead of binding to internal state of its properties, a KViewBox or a KView can have its children bind to an external object's properties. This object can then be shared among different KViews, some of which can mutate it, and others will immediately be notified of the changes.
+
+To implement such behavior, first declare a class that implements *StatefulProducer*. It must only define a single readonly property, that of a *Stateful* object that its clients will consume. The easiest way to get such an object is to use the *Stateful.default()* function, which contains a simple implementation of a Stateful object.
+
+Then, declare the observable properties the usual way, via the *state* delegate. Naturally, the class can contain other properties and methods that won't be exposed to client KViews.
+
+```kotlin
+class ExternalObserved : StatefulProducer {
+    var counter: Int by state(0)
+    var input: String by state("Change me!")
+
+    override val stateful = Stateful.default()
+}
+```
+
+Here's an example of two distinct KViews, both bound to the same ExternalObserved instance. The first one observes the state and is refreshed whenever a property of ExternalObserved is changed, while the other one changes the property on button click:
+
+```kotlin
+class CounterView(context: Context, external: ExternalObserved) : KView<View>(context) {
+    override val view = row {
+        text("Counter is ${external.counter}")
+        space()
+        text("Input is ${external.input}")
+    }.bindTo(external)
+            .view
+}
+    
+class CounterUpdater(context: Context, external: ExternalObserved) : KViewBox(context) {
+        override val root = rootColumn(Gravity.CENTER_HORIZONTAL) {
+     button("Increment")
+   }.padding(10)
+}
+
+...
+// In your Activity
+...
+val external = ExternalObserved()
+setContentView(this) {
+    column {
+        add(CounterView(context, external))
+        add(CounterUpdater(context, external))
+    }
+}
+```
+
+You can also bind directly to an external object's properties:
+
+```kotlin
+button().bindTo(external, external::input)
+chbEventOnly = checkBox("Even only", ::evenOnly)
+                    .bindTo(statefulTest, statefulTest::counter, wrap(KCheckBox::text) {
+    "Even only counter $it"                  
+  })
+```
 
 #### Infix methods
 
@@ -250,6 +324,14 @@ override val root = rootColumn {
             text("$it")
         }
     }
+}
+```
+
+For fun's sake, there's also this gem that's, hopefully, self-explanatory:
+
+```kotlin
+init {
+    external::counter of external triggers KCheckBox::text via { "Even only counter $it" } on chbEventOnly
 }
 ```
 
