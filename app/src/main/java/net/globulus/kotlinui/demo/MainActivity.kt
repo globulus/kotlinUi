@@ -33,12 +33,18 @@ class MainActivity : AppCompatActivity() {
 
 //        setContentView(list)
         val statefulTest = StatefulTest()
-        setContentView(this) {
-            column {
-                add(CounterView(context, statefulTest))
-                add(InfixTest(context, statefulTest))
+//        setContentView(this) {
+//            column {
+//                add(CounterView(context, statefulTest))
+//                add(InfixTest(context, statefulTest))
+//            }
+//        }
+
+        tabs(R.string.app_name,
+            arrayOf(R.string.button_1, R.string.label_1),
+            listOf("AAAA", "BBBB")) {
+                text(it)
             }
-        }
 
         Handler().postDelayed({
 //            list.landmarks.removeIf { it.isFavorite }
