@@ -31,6 +31,6 @@ class KImage(
     }
 }
 
-fun <T: KView<*>> T.image(@DrawableRes resId: Int): KImage {
+fun <T: KView<*>> T.image(@DrawableRes resId: Int = 0): KImage {
     return add(KImage(context, resId))
 }

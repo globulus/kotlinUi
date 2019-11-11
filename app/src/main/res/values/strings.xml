@@ -3,4 +3,6 @@
     <string name="label_1">Label 1</string>
     <string name="button_1">Update label</string>
     <string name="show_favorites">Show favorites</string>
+  <string name="hint">Hint</string>
+  <string name="empty">Empty</string>
 </resources>
