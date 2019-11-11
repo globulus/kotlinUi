@@ -33,18 +33,23 @@ class MainActivity : AppCompatActivity() {
 
 //        setContentView(list)
         val statefulTest = StatefulTest()
-//        setContentView(this) {
-//            column {
-//                add(CounterView(context, statefulTest))
-//                add(InfixTest(context, statefulTest))
-//            }
-//        }
-
-        tabs(R.string.app_name,
-            arrayOf(R.string.button_1, R.string.label_1),
-            listOf("AAAA", "BBBB")) {
-                text(it)
+        setContentView(this) {
+            column {
+                add(CounterView(context, statefulTest))
+                add(InfixTest(context, statefulTest))
+//                grid(listOf("AA", "BB", "CC")) {
+//                    materialTextField { textField() }
+//                        .error(R.string.label_1)
+//                }.applyOnView {
+//                    columnWidth = 500
+//                }
             }
+        }
+
+//        setContentTabs(arrayOf(R.string.button_1, R.string.label_1),
+//            listOf("AAAA", "BBBB")) {
+//                text(it)
+//            }
 
         Handler().postDelayed({
 //            list.landmarks.removeIf { it.isFavorite }
@@ -54,7 +59,7 @@ class MainActivity : AppCompatActivity() {
 
     class StatefulTest : StatefulProducer {
         var counter: Int by state(0)
-        var input: String by state("Change me!")
+        var input: String by state("")
 
         override val stateful = Stateful.default {
             Log.e("AAAAA", "Updated $this with $it")
@@ -78,7 +83,9 @@ class MainActivity : AppCompatActivity() {
         lateinit var chbEventOnly: KCheckBox
 
         override val root = rootColumn(Gravity.CENTER_HORIZONTAL) {
-            textField(statefulTest::input).margins(0, 0, 0, 10)
+            materialTextField { textField(statefulTest::input) }
+                .margins(0, 0, 0, 10)
+                .hint(R.string.hint)
             checkBox("Button visible", ::buttonVisible)
             chbEventOnly = checkBox("Even only", ::evenOnly)
 //                    .bindTo(statefulTest, statefulTest::counter, wrap(KCheckBox::text) {

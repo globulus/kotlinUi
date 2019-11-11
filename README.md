@@ -1,6 +1,6 @@
 # KotlinUi
 
-Declarative UI building for Android in Kotlin
+Declarative UI building for Android in Kotlin.
 
 ### Quickstart
 
@@ -349,6 +349,7 @@ Here's a table of currently available KView widgets that wrap common Android Vie
 | Column        | LinearLayout - VERTICAL | redraws all children | column { text(R.string.text) } |
 | Row           | LinearLayout - HORIZONTAL | redraws all children | row { text(R.string.text) } |
 | KList         | RecyclerView | adapter.notifyDataSetChanged() | [See below](#klist) |
+| KGrid         | GridView    | adapter.notifyDataSetChanged() | [See below](#kgrid) |
 
 
 #### Widget Functions
@@ -421,5 +422,47 @@ class LandmarkRow(context: Context, private val landmark: Landmark) : KView<View
             }
         }.padding(5)
                 .view
+}
+```
+
+##### KGrid
+
+A KGrid is essentially the same as a KList, except it wraps a GridView. The logic and usage is exactly the same, though: pass a list of data, and provide a view renderer.
+
+Should your need more customizations to the underlying GridView, the *applyOnView* method comes in handy:
+
+```kotlin
+grid(listOf("AA", "BB", "CC")) {
+   text(it)
+}.applyOnView {
+    columnWidth = 500
+}
+```
+
+#### KMaterialTextField
+
+KMaterialTextField is a KView of *TextInputLayout*, and as such wraps a KTextField, exposing *hint* and *error* methods as well:
+
+```kotlin
+materialTextField { textField(::name) }
+  .hint(R.string.hint)
+  .error(if (name.isEmpty()) R.string.name_error else 0)
+```
+
+### Tabs
+
+KTabs is a superwidget that allows for KotlinUi implementation of a tabbed view pager, complete with AppBarLayout and underlying fragments.
+
+An AppCompatActivity can use the *setContentTabs* method to implement a KTabs interface. Provided parameters are titles for the tabs, a list of page models, and a renderer for each model:
+
+```kotlin
+class MainActivity : AppCompatActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentTabs(arrayOf(R.string.tab_1, R.string.tab_2),
+            listOf("AAAA", "BBBB")) {
+                text(it)
+            }
 }
 ```

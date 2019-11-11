@@ -20,10 +20,7 @@ class KGrid<D>(
     renderer: GridRenderer<D>
 ) : KView<GridView>(context) {
 
-    override val view = GridView(context).apply {
-        layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-        numColumns = GridView.AUTO_FIT
-        stretchMode = GridView.STRETCH_SPACING_UNIFORM
+    override val view = (LayoutInflater.from(context).inflate(R.layout.view_grid, null) as GridView).apply {
         adapter = object : BaseAdapter() {
             override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
                 val cv = convertView ?: LayoutInflater.from(context).inflate(R.layout.item_list, parent, false).apply {

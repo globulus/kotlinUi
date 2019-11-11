@@ -5,7 +5,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
@@ -16,6 +15,7 @@ import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.tabs.TabLayout
 import net.globulus.kotlinui.KView
 import net.globulus.kotlinui.R
+import net.globulus.kotlinui.root
 
 typealias TabTitles = Array<Int>
 typealias TabRenderer<D> = KView<CoordinatorLayout>.(D) -> KView<*>
@@ -23,7 +23,6 @@ typealias TabRenderer<D> = KView<CoordinatorLayout>.(D) -> KView<*>
 class KTabs<D>(
     context: Context,
     fm: FragmentManager,
-    @StringRes titleResId: Int,
     tabTitles: TabTitles,
     data: List<D>,
     renderer: TabRenderer<D>
@@ -38,32 +37,6 @@ class KTabs<D>(
     tabs = findViewById(R.id.tabs)
     viewPager = findViewById(R.id.viewPager)
   }
-
-//  private val appBarLayout = AppBarLayout(context).apply {
-//    layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-////    addView(TextView(context).apply {
-////      layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-////      gravity = Gravity.CENTER
-//////      minHeight =
-////      text = context.getString(titleResId)
-////      setPadding(context.resources.getDimensionPixelSize(R.dimen.appbar_padding))
-////      setTextAppearance(android.R.style.TextAppearance_Material_Widget_Toolbar_Title)
-////    })
-//    view.addView(this)
-//  }
-//
-//  val tabs = TabLayout(context).apply {
-//    layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-//    appBarLayout.addView(this)
-//  }
-//
-//  val viewPager = ViewPager(context).apply {
-//    id = View.generateViewId()
-//    layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-//    view.addView(this)
-////    val params = view.layoutParams as CoordinatorLayout.LayoutParams
-////    params.behavior = AppBarLayout.ScrollingViewBehavior(view.context, null)
-//  }
 
   init {
     val sectionsPagerAdapter = SectionsPagerAdapter(this, fm, tabTitles, data, renderer)
@@ -103,14 +76,12 @@ class KTabs<D>(
   }
 }
 
-fun <D> AppCompatActivity.tabs(
-    @StringRes titleResId: Int,
+fun <D> AppCompatActivity.setContentTabs(
     tabTitles: TabTitles,
-    data:
-    List<D>,
+    data: List<D>,
     renderer: TabRenderer<D>
 ): KTabs<D> {
-  val tabs = KTabs(this, supportFragmentManager, titleResId, tabTitles, data, renderer)
-  setContentView(tabs.view)
+  val tabs = KTabs(this, supportFragmentManager, tabTitles, data, renderer)
+  setContentView(root(tabs).view)
   return tabs
 }
