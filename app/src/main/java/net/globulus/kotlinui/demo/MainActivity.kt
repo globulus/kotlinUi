@@ -34,16 +34,28 @@ class MainActivity : AppCompatActivity() {
 //        setContentView(list)
         val statefulTest = StatefulTest()
         setContentView(this) {
-            column {
-                add(CounterView(context, statefulTest))
-                add(InfixTest(context, statefulTest))
-//                grid(listOf("AA", "BB", "CC")) {
-//                    materialTextField { textField() }
-//                        .error(R.string.label_1)
-//                }.applyOnView {
-//                    columnWidth = 500
-//                }
+            flex {
+               val a = button("AAAA")
+                val b = button("BBBB")
+               val c = button("CCCC")
+
+                constrain(
+                    *(a centerIn this),
+                    c sits 200 toRightOf a,
+                    b toRightOf c
+                )
             }
+//            toolbarColumn {
+//                add(CounterView(context, statefulTest))
+//                add(InfixTest(context, statefulTest))
+//
+////                grid(listOf("AA", "BB", "CC")) {
+////                    materialTextField { textField() }
+////                        .error(R.string.label_1)
+////                }.applyOnView {
+////                    columnWidth = 500
+////                }
+//            }
         }
 
 //        setContentTabs(arrayOf(R.string.button_1, R.string.label_1),
