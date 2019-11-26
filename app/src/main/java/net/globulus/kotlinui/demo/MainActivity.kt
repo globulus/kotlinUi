@@ -34,17 +34,25 @@ class MainActivity : AppCompatActivity() {
 //        setContentView(list)
         val statefulTest = StatefulTest()
         setContentView(this) {
-            flex {
-               val a = button("AAAA")
-                val b = button("BBBB")
-               val c = button("CCCC")
+            var a: KButton? = null
+            var b: KButton? = null
+            var c: KButton? = null
+            var f = flex {
+               a = button("AAAA")
+                b = button("BBBB")
+               c = button("CCCC")
 
-                constrain(
-                    *(a centerIn this),
-                    c sits 200 toRightOf a,
-                    b toRightOf c
-                )
+
             }
+            f.constrain(
+                *(a centerIn f),
+//                a!!.left alignsWith this.left,
+//                a!!.right alignsWith this.right,
+                c sits 200 toRightOf a,
+                b toRightOf c,
+                c!!.baseline alignsWith a!!.baseline,
+                b!!.baseline alignsWith a!!.baseline
+            )
 //            toolbarColumn {
 //                add(CounterView(context, statefulTest))
 //                add(InfixTest(context, statefulTest))
