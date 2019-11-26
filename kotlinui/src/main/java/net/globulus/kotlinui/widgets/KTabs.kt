@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.Toolbar
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentManager
@@ -29,11 +30,13 @@ class KTabs<D>(
 ) : KView<CoordinatorLayout>(context) {
 
   val appBarLayout: AppBarLayout
+  val toolbar: Toolbar
   val tabs: TabLayout
   val viewPager: ViewPager
 
   override val view = (LayoutInflater.from(context).inflate(R.layout.layout_tabs, null) as CoordinatorLayout).apply {
     appBarLayout = findViewById(R.id.appBarLayout)
+    toolbar = findViewById(R.id.toolbar)
     tabs = findViewById(R.id.tabs)
     viewPager = findViewById(R.id.viewPager)
   }
