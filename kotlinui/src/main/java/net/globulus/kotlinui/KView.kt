@@ -5,6 +5,7 @@ import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import androidx.core.view.ViewCompat
 import kotlin.reflect.KCallable
 import kotlin.reflect.KFunction
 import kotlin.reflect.KMutableProperty
@@ -60,6 +61,7 @@ abstract class KView<out V: View>(val context: Context) : Stateful, StatefulProd
 
     open fun <T: KView<*>> add(v: T): T {
         addView(v.view)
+        v.view.id = ViewCompat.generateViewId()
         v.parent = this
         v.id = v::class.java.simpleName + viewCounter
         viewCounter += v.viewCounter + 1
