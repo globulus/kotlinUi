@@ -6,15 +6,31 @@ import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.constraintlayout.widget.ConstraintSet
 import androidx.core.view.ViewCompat
 import net.globulus.kotlinui.KView
+import net.globulus.kotlinui.KViewBox
+import net.globulus.kotlinui.root
 
-class KFlex(context: Context) : KView<ConstraintLayout>(context) {
+class KFlex(context: Context,
+            invokeBlockNow: Boolean,
+            private val block: KFlex.() -> Unit
+) : KView<ConstraintLayout>(context) {
 
   override val view: ConstraintLayout = ConstraintLayout(context).apply {
     id = ViewCompat.generateViewId()
   }
 
+  init {
+    if (invokeBlockNow) {
+      block()
+    }
+  }
+
   override fun addView(v: View) {
     view.addView(v)
+  }
+  override fun <R> updateValue(r: R) {
+    removeAllChildren()
+    view.removeAllViews()
+    block()
   }
 
   fun constrain(vararg blocks: ConstraintSetBlock): KFlex {
@@ -26,11 +42,14 @@ class KFlex(context: Context) : KView<ConstraintLayout>(context) {
     constraintSet.applyTo(view)
     return this
   }
+
 }
 
 fun <T: KView<*>> T.flex(block: KFlex.() -> Unit): KFlex {
-  return add(KFlex(context).apply(block))
+  return add(KFlex(context, true, block))
 }
+
+fun <T: KViewBox> T.rootFlex(block: KFlex.() -> Unit) = root(KFlex(context,false, block))
 
 private typealias ConstraintSetBlock = (ConstraintSet) -> Unit
 private typealias KViewIntPair = Pair<KView<*>?, Int>
@@ -55,12 +74,12 @@ infix fun KViewIntPair.toLeftOf(second: KView<*>?) = this.first?.end sits this.s
 infix fun <T: View> KView<T>?.toRightOf(second: KView<*>?) = this sits 0 toRightOf second
 infix fun KViewIntPair.toRightOf(second: KView<*>?) = this.first?.start sits this.second from second?.end
 
-infix fun <T: View> KView<T>?.centerIn(parent: KFlex) = listOf<ConstraintSetBlock>(
+infix fun <T: View> KView<T>?.centerIn(parent: KFlex) = arrayOf<ConstraintSetBlock>(
     connect(parent, ConstraintSet.TOP, ConstraintSet.TOP),
     connect(parent, ConstraintSet.BOTTOM, ConstraintSet.BOTTOM),
     connect(parent, ConstraintSet.LEFT, ConstraintSet.LEFT),
     connect(parent, ConstraintSet.RIGHT, ConstraintSet.RIGHT)
-).toTypedArray()
+)
 
 private fun <T: View> KView<T>?.connect(second: KView<*>?,
                                        startSide: Int?,

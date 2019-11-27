@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
             var a: KButton? = null
             var b: KButton? = null
             var c: KButton? = null
-            var f = flex {
+            val f = flex {
                a = button("AAAA")
                 b = button("BBBB")
                c = button("CCCC")

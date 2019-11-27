@@ -61,7 +61,7 @@ There's quite a bit more code in there, allowing for nested KViews, bindings, et
 
 #### KRootView
 
-Your KViewBox must return an instance of KRootView, which is just a regular KView, except it allows the state binders to know when they've reached the top-most level. While you can specify your own root view, *rootColumn* and *rootRow* extension functions allow for seamless creation of a [Column](#kstack) and [Row](#kstack) root containers, respectively.
+Your KViewBox must return an instance of KRootView, which is just a regular KView, except it allows the state binders to know when they've reached the top-most level. While you can specify your own root view, *rootColumn* and *rootRow* extension functions allow for seamless creation of a [Column](#kstack) and [Row](#kstack) root containers, respectively. There are also *rootToolbarColumn* and *rootFlex* available.
 
 ### Binding
 
@@ -348,6 +348,7 @@ Here's a table of currently available KView widgets that wrap common Android Vie
 | KTextField    | EditText | EditText text | textField(::boundProperty) |
 | Column        | LinearLayout - VERTICAL | redraws all children | column { text(R.string.text) } |
 | Row           | LinearLayout - HORIZONTAL | redraws all children | row { text(R.string.text) } |
+| KFlex         | ConstraintLayout | redraws all children | [See below](#kflex) |
 | KList         | RecyclerView | adapter.notifyDataSetChanged() | [See below](#klist) |
 | KGrid         | GridView    | adapter.notifyDataSetChanged() | [See below](#kgrid) |
 
@@ -373,6 +374,62 @@ row {
     space()
     image(android.R.drawable.star_big_on)
 }
+```
+
+#### KFlex
+
+KFlex wraps a ConstraintLayout. You use it much like any other container, declaring items that live within it. At the end of it, invoke the *constrain* method, listing as its parameters the relations between children KViews:
+
+```kotlin
+flex {
+    val b1 = button("Button 1")
+    val cb = checkBox("CheckBox")
+    val b2 = button("Button 2")
+    constrain(
+      cb sits 100 toRightOf b1,
+      b2 toRightOf cb,
+      cb.baseline alignsWith b2.top,
+      b2.baseline sits 50 from cb.baseline
+    )
+}
+```
+
+The simplicity of using KFlex as opposed to regular ConstraintLayout lies with its DSL, which makes it dead simple to define relationships between views.
+
+Each KView has extension property that binds it to a ConstraintSet constant:
+
+| Extension property | Constant |
+| ------------------ | -------- |
+| end       | ConstraintSet.END |
+| start       | ConstraintSet.START |
+| left       | ConstraintSet.LEFT |
+| right       | ConstraintSet.RIGHT |
+| top       | ConstraintSet.TOP |
+| bottom       | ConstraintSet.BOTTOM |
+| baseline       | ConstraintSet.BASELINE |
+
+Use *alignsWith* to describe equality of two positions:
+```kotlin
+button.baseline alignsWith text.top
+```
+
+If you need to include a margin, use *sits-from* construct instead:
+```kotlin
+button.baseline sits 100 from text.top
+```
+
+Some helper operators bring in some RelativeLayout-style constraints:
+```kotlin
+button toLeftOf text // equal to button.end alignsWith text.start
+button2 sits 50 toRightOf text2 // equal to button2.start sits 50 from text2.end
+```
+
+*centerIn* is a compound constraint that allows you to center a KView in a KFlex. This requires you to invoke the *constrain* method *after* KFlex has been added to its parent:
+```kotlin
+val f = flex {
+  label = text("Some text")
+}
+f.constrain(*(label centerIn f)) // centerIn is a compound constraint and needs to be unpacked with *
 ```
 
 #### KList
