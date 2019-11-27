@@ -4,7 +4,7 @@ Declarative UI building for Android in Kotlin.
 
 ### Quickstart
 
-Install the lib.
+Install the lib. Currently, the AARs (debug and release) are hosted [here](kotlinui/build/outputs/aar/), but will be added to JCenter soon.
 
 Add this class to your app:
 
@@ -236,7 +236,9 @@ class CounterView(context: Context, ext: ExternalObserved) : KView<View>(context
     
 class CounterUpdater(context: Context, ext: ExternalObserved) : KViewBox(context) {
         override val root = rootColumn(Gravity.CENTER_HORIZONTAL) {
-     button("Increment")
+     button("Increment") {
+         ext.counter += 1
+     }.widthWrapContent()
    }.padding(10)
 }
 
@@ -262,7 +264,7 @@ chbEventOnly = checkBox("Even only", ::evenOnly)
   })
 ```
 
-#### Infix methods
+#### Infix operators
 
 KotlinUi lib contains a number of infix functions that allow you to declare bindings in almost natural language. Consider this example:
 
@@ -521,5 +523,6 @@ class MainActivity : AppCompatActivity() {
             listOf("AAAA", "BBBB")) {
                 text(it)
             }
+    }
 }
 ```
