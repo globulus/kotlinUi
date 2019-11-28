@@ -158,6 +158,7 @@ internal fun <P: StatefulProducer, T: Stateful, R> T.bindTo(
                 updateValue(it)
             }
         }))
+        stateful.observables[name]?.bound = false
     }
     return this
 }
