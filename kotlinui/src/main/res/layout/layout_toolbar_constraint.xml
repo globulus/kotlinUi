@@ -18,18 +18,15 @@
       android:background="?attr/colorPrimary"
       app:popupTheme="@style/ThemeOverlay.AppCompat.Light" />
 
-    <com.google.android.material.tabs.TabLayout
-      android:id="@+id/tabs"
-      android:layout_width="match_parent"
-      android:layout_height="wrap_content"
-      android:background="?attr/colorPrimary" />
   </com.google.android.material.appbar.AppBarLayout>
 
-  <androidx.viewpager.widget.ViewPager
-    android:id="@+id/viewPager"
+  <androidx.constraintlayout.widget.ConstraintLayout
+    android:id="@+id/constraintLayout"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+    android:layout_height="wrap_content"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+  </androidx.constraintlayout.widget.ConstraintLayout>
 
   <com.google.android.material.floatingactionbutton.FloatingActionButton
     android:id="@+id/fab"
