@@ -9,14 +9,18 @@ import androidx.recyclerview.widget.RecyclerView
 import net.globulus.kotlinui.KView
 import net.globulus.kotlinui.R
 import net.globulus.kotlinui.bindTo
+import net.globulus.kotlinui.traits.Data
+import net.globulus.kotlinui.traits.DataProducer
 import kotlin.reflect.KProperty
 
 typealias ListRenderer<D> = KView<RecyclerView>.(D) -> KView<*>
 typealias RowProducer<D> = () -> KList.Row<D>
 
-class KList<D>(context: Context, private val data: List<D>) : KView<RecyclerView>(context) {
+class KList<D>(context: Context, private val dataProducer: DataProducer<D>) : KView<RecyclerView>(context) {
 
-    constructor(context: Context, items: List<D>, renderer: ListRenderer<D>) : this(context, items) {
+    private var data = dataProducer()
+
+    constructor(context: Context, dataProducer: DataProducer<D>, renderer: ListRenderer<D>) : this(context, dataProducer) {
         view.adapter = object : RecyclerView.Adapter<ViewHolder>() {
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
                 return ViewHolder(LayoutInflater.from(context)
@@ -40,7 +44,7 @@ class KList<D>(context: Context, private val data: List<D>) : KView<RecyclerView
         }
     }
 
-    constructor(context: Context, items: List<D>, rowProducer: RowProducer<D>) : this(context, items) {
+    constructor(context: Context, dataProducer: DataProducer<D>, rowProducer: RowProducer<D>) : this(context, dataProducer) {
         view.adapter = object : RecyclerView.Adapter<ViewHolder>() {
             override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
                 val row = rowProducer()
@@ -65,6 +69,7 @@ class KList<D>(context: Context, private val data: List<D>) : KView<RecyclerView
     }
 
     override fun <R> updateValue(r: R) {
+        data = dataProducer()
         view.adapter?.notifyDataSetChanged()
     }
 
@@ -76,18 +81,22 @@ class KList<D>(context: Context, private val data: List<D>) : KView<RecyclerView
     }
 }
 
-fun <T: KView<*>, D> T.list(data: List<D>, renderer: ListRenderer<D>): KList<D> {
-    return add(KList(context, data, renderer))
+fun <T: KView<*>, D> T.list(dataProducer: DataProducer<D>, renderer: ListRenderer<D>): KList<D> {
+    return add(KList(context, dataProducer, renderer))
 }
+
+fun <T: KView<*>, D> T.list(data: Data<D>, renderer: ListRenderer<D>) = list({ data }, renderer)
 
 fun <T: KView<*>, D> T.list(prop: KProperty<List<D>>, renderer: ListRenderer<D>): KList<D> {
-    return add(KList(context, prop.getter.call(), renderer)).bindTo(prop)
+    return add(KList(context, { prop.getter.call() }, renderer)).bindTo(prop)
 }
 
-fun <T: KView<*>, D> T.recycledList(data: List<D>, rowProducer: RowProducer<D>): KList<D> {
-    return add(KList(context, data, rowProducer))
+fun <T: KView<*>, D> T.recycledList(dataProducer: DataProducer<D>, rowProducer: RowProducer<D>): KList<D> {
+    return add(KList(context, dataProducer, rowProducer))
 }
+
+fun <T: KView<*>, D> T.recycledList(data: Data<D>, rowProducer: RowProducer<D>) = recycledList({ data }, rowProducer)
 
 fun <T: KView<*>, D> T.recycledList(prop: KProperty<List<D>>, rowProducer: RowProducer<D>): KList<D> {
-    return add(KList(context, prop.getter.call(), rowProducer)).bindTo(prop)
+    return add(KList(context, { prop.getter.call() }, rowProducer)).bindTo(prop)
 }

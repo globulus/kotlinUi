@@ -10,15 +10,19 @@ import android.widget.GridView
 import net.globulus.kotlinui.KView
 import net.globulus.kotlinui.R
 import net.globulus.kotlinui.bindTo
+import net.globulus.kotlinui.traits.Data
+import net.globulus.kotlinui.traits.DataProducer
 import kotlin.reflect.KProperty
 
 typealias GridRenderer<D> = KView<GridView>.(D) -> KView<*>
 
 class KGrid<D>(
     context: Context,
-    private val data: List<D>,
+    private val dataProducer: DataProducer<D>,
     renderer: GridRenderer<D>
 ) : KView<GridView>(context) {
+
+    private var data = dataProducer()
 
     override val view = (LayoutInflater.from(context).inflate(R.layout.view_grid, null) as GridView).apply {
         adapter = object : BaseAdapter() {
@@ -54,16 +58,19 @@ class KGrid<D>(
     }
 
     override fun <R> updateValue(r: R) {
+        data = dataProducer()
         (view.adapter as? BaseAdapter)?.notifyDataSetChanged()
     }
 
     private class ViewHolder(val view: FrameLayout)
 }
 
-fun <T: KView<*>, D> T.grid(data: List<D>, renderer: GridRenderer<D>): KGrid<D> {
-    return add(KGrid(context, data, renderer))
+fun <T: KView<*>, D> T.grid(dataProducer: DataProducer<D>, renderer: GridRenderer<D>): KGrid<D> {
+    return add(KGrid(context, dataProducer, renderer))
 }
 
+fun <T: KView<*>, D> T.grid(data: Data<D>, renderer: GridRenderer<D>) = grid({ data }, renderer)
+
 fun <T: KView<*>, D> T.grid(prop: KProperty<List<D>>, renderer: GridRenderer<D>): KGrid<D> {
-    return add(KGrid(context, prop.getter.call(), renderer)).bindTo(prop)
+    return add(KGrid(context, { prop.getter.call() }, renderer)).bindTo(prop)
 }

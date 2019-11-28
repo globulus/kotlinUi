@@ -8,11 +8,12 @@ import androidx.core.view.ViewCompat
 import net.globulus.kotlinui.KView
 import net.globulus.kotlinui.KViewBox
 import net.globulus.kotlinui.root
+import net.globulus.kotlinui.traits.RootContainer
 
 class KFlex(context: Context,
             invokeBlockNow: Boolean,
             private val block: KFlex.() -> Unit
-) : KView<ConstraintLayout>(context) {
+) : KView<ConstraintLayout>(context), RootContainer {
 
   override val view: ConstraintLayout = ConstraintLayout(context).apply {
     id = ViewCompat.generateViewId()
@@ -20,7 +21,7 @@ class KFlex(context: Context,
 
   init {
     if (invokeBlockNow) {
-      block()
+      invokeBlock()
     }
   }
 
@@ -30,19 +31,28 @@ class KFlex(context: Context,
   override fun <R> updateValue(r: R) {
     removeAllChildren()
     view.removeAllViews()
+    invokeBlock()
+  }
+
+  override fun invokeBlock() {
     block()
   }
 
   fun constrain(vararg blocks: ConstraintSetBlock): KFlex {
-    val constraintSet = ConstraintSet()
-    constraintSet.clone(view)
-    for (block in blocks) {
-      block(constraintSet)
-    }
-    constraintSet.applyTo(view)
+    constrain(view, *blocks)
     return this
   }
 
+  companion object {
+    internal fun constrain(layout: ConstraintLayout, vararg blocks: ConstraintSetBlock) {
+      val constraintSet = ConstraintSet()
+      constraintSet.clone(layout)
+      for (block in blocks) {
+        block(constraintSet)
+      }
+      constraintSet.applyTo(layout)
+    }
+  }
 }
 
 fun <T: KView<*>> T.flex(block: KFlex.() -> Unit): KFlex {
@@ -51,7 +61,7 @@ fun <T: KView<*>> T.flex(block: KFlex.() -> Unit): KFlex {
 
 fun <T: KViewBox> T.rootFlex(block: KFlex.() -> Unit) = root(KFlex(context,false, block))
 
-private typealias ConstraintSetBlock = (ConstraintSet) -> Unit
+internal typealias ConstraintSetBlock = (ConstraintSet) -> Unit
 private typealias KViewIntPair = Pair<KView<*>?, Int>
 
 val KView<*>.end: KViewIntPair get() = this to ConstraintSet.END

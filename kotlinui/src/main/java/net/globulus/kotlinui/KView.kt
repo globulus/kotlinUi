@@ -5,6 +5,7 @@ import android.content.Context
 import android.view.View
 import android.view.ViewGroup
 import android.widget.LinearLayout
+import androidx.appcompat.app.AlertDialog
 import androidx.core.view.ViewCompat
 import kotlin.reflect.KCallable
 import kotlin.reflect.KFunction
@@ -123,6 +124,10 @@ abstract class KView<out V: View>(val context: Context) : Stateful, StatefulProd
 }
 
 fun Activity.setContentView(context: Context, block: KView<View>.() -> KView<View>) {
+    setContentView(kview(context, block).view)
+}
+
+fun AlertDialog.setContentView(context: Context, block: KView<View>.() -> KView<View>) {
     setContentView(kview(context, block).view)
 }
 

@@ -8,6 +8,7 @@ import android.widget.Space
 import net.globulus.kotlinui.KView
 import net.globulus.kotlinui.KViewBox
 import net.globulus.kotlinui.root
+import net.globulus.kotlinui.traits.RootContainer
 
 abstract class KStack<T: KStack<T>> internal constructor(
         context: Context,
@@ -15,7 +16,7 @@ abstract class KStack<T: KStack<T>> internal constructor(
         gravity: Int,
         invokeBlockNow: Boolean,
         protected val block: T.() -> Unit
-) : KView<LinearLayout>(context) {
+) : KView<LinearLayout>(context), RootContainer {
 
     override val view: LinearLayout = LinearLayout(context).apply {
         orientation = o
@@ -27,8 +28,6 @@ abstract class KStack<T: KStack<T>> internal constructor(
             invokeBlock()
         }
     }
-
-    abstract fun invokeBlock()
 
     override fun addView(v: View) {
         view.addView(v)
