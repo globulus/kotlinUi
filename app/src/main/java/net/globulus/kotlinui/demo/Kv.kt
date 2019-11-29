@@ -24,7 +24,7 @@ class Kv(context: Context) : KView<View>(context) {
                     buttonTitle = Date().toString()
                     listItems.add(buttonTitle)
                 }.id(::goButton)
-                list(::listItems) {
+                list(prop = ::listItems) {
                     text(it)
                 }
             }.view
