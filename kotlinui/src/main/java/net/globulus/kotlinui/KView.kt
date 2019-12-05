@@ -121,6 +121,18 @@ abstract class KView<out V: View>(val context: Context) : Stateful, StatefulProd
         viewCounter = 0
         viewMap.clear()
     }
+
+    operator fun View.unaryPlus() {
+        add(this)
+    }
+
+    operator fun KViewBox.unaryPlus() {
+        add(this)
+    }
+
+    operator fun KView<*>.plus(other: KView<*>) {
+        add(other)
+    }
 }
 
 fun Activity.setContentView(context: Context, block: KView<View>.() -> KView<View>) {
