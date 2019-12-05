@@ -23,7 +23,7 @@ class LandmarkList(context: Context, data: List<Landmark>) : KViewBox(context) {
                     .text(R.string.show_favorites)
                     .margins(5, 10, 5, 10)
             if (showList) {
-                list(prop = ::landmarks) {
+                list(bindTo = ::landmarks) {
                     if (it.header != null) {
                         text(it.header)
                     }

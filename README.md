@@ -61,7 +61,7 @@ There's quite a bit more code in there, allowing for nested KViews, bindings, et
 
 #### KRootView
 
-Your KViewBox must return an instance of KRootView, which is just a regular KView, except it allows the state binders to know when they've reached the top-most level. While you can specify your own root view, *rootColumn* and *rootRow* extension functions allow for seamless creation of a [Column](#kstack) and [Row](#kstack) root containers, respectively. There are also *rootToolbarColumn* and *rootFlex* available.
+Your KViewBox must return an instance of KRootView, which is just a regular KView, except it allows the state binders to know when they've reached the top-most level. While you can specify your own root view, *rootColumn* and *rootRow* extension functions allow for seamless creation of a [Column](#klinearlayout) and [Row](#klinearlayout) root containers, respectively. There are also *rootToolbarColumn* and *rootFlex* available.
 
 ### Binding
 
@@ -129,7 +129,7 @@ There's an overload of the *bindTo* method that takes a vararg of property-metho
 text(R.string.initial_text).bindTo(::showText updates KText::visible, ::textContent updates KText::text)
 ```
 
-Note - bindTo on a *KStack* (*Column* or *Row*) will re-render its entire content.
+Note - bindTo on a *KLinearLayout* (*Column* or *Row*) will re-render its entire content.
 
 
 ###### Wrapping bound methods
@@ -348,8 +348,10 @@ Here's a table of currently available KView widgets that wrap common Android Vie
 | KCheckBox     | Checkbox | text if value is String, isChecked if Boolean       | checkbox(R.string.checkbox_title, ::boundProperty) |
 | KImage        | ImageView | image if value is @DrawableRes Int or a Drawable | image(R.drawable.image) |
 | KTextField    | EditText | EditText text | textField(::boundProperty) |
+| KSpinner     | ProgressBar | visibility | spinner(::isLoading) |
 | Column        | LinearLayout - VERTICAL | redraws all children | column { text(R.string.text) } |
 | Row           | LinearLayout - HORIZONTAL | redraws all children | row { text(R.string.text) } |
+| KStack        | FrameLayout | redraws all children | stack { text(R.string.text) } |
 | KFlex         | ConstraintLayout | redraws all children | [See below](#kflex) |
 | KList         | RecyclerView | adapter.notifyDataSetChanged() | [See below](#klist) |
 | KGrid         | GridView    | adapter.notifyDataSetChanged() | [See below](#kgrid) |
@@ -362,9 +364,9 @@ Beyond what's available in the constructor functions, you can modify your widget
 The important takeaway is that **all these functions are *setters* - they modify the KView and return it** to allow for fluent syntax. This is because KViews are supposed to be **stateless** - they reflect the declared state, and communicate back through events, but you **cannot** (or at least shouldn't) inspect individual KView's internal state at runtime - that's what [state properties](#state) and [bindings](#binding) are for.
 
 
-#### KStack
+#### KLinearLayout
 
-KStack wraps a LinearLayout. Two subclasses are available for general use - *Column* and *Row*.
+KLinearLayout wraps a LinearLayout. Two subclasses are available for general use - *Column* and *Row*.
 
 You can use *space()* function to add a flexible empty space between elements:
 

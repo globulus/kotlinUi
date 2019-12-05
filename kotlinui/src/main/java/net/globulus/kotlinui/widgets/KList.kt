@@ -87,8 +87,8 @@ fun <T: KView<*>, D> T.list(dataProducer: DataProducer<D>, renderer: ListRendere
 
 fun <T: KView<*>, D> T.list(data: Data<D>, renderer: ListRenderer<D>) = list({ data }, renderer)
 
-fun <T: KView<*>, D> T.list(prop: KProperty<List<D>>, renderer: ListRenderer<D>): KList<D> {
-    return add(KList(context, { prop.getter.call() }, renderer)).bindTo(prop)
+fun <T: KView<*>, D> T.list(bindTo: KProperty<List<D>>, renderer: ListRenderer<D>): KList<D> {
+    return add(KList(context, { bindTo.getter.call() }, renderer)).bindTo(bindTo)
 }
 
 fun <T: KView<*>, D> T.recycledList(dataProducer: DataProducer<D>, rowProducer: RowProducer<D>): KList<D> {
@@ -97,6 +97,6 @@ fun <T: KView<*>, D> T.recycledList(dataProducer: DataProducer<D>, rowProducer: 
 
 fun <T: KView<*>, D> T.recycledList(data: Data<D>, rowProducer: RowProducer<D>) = recycledList({ data }, rowProducer)
 
-fun <T: KView<*>, D> T.recycledList(prop: KProperty<List<D>>, rowProducer: RowProducer<D>): KList<D> {
-    return add(KList(context, { prop.getter.call() }, rowProducer)).bindTo(prop)
+fun <T: KView<*>, D> T.recycledList(bindTo: KProperty<List<D>>, rowProducer: RowProducer<D>): KList<D> {
+    return add(KList(context, { bindTo.getter.call() }, rowProducer)).bindTo(bindTo)
 }

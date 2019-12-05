@@ -71,6 +71,6 @@ fun <T: KView<*>, D> T.grid(dataProducer: DataProducer<D>, renderer: GridRendere
 
 fun <T: KView<*>, D> T.grid(data: Data<D>, renderer: GridRenderer<D>) = grid({ data }, renderer)
 
-fun <T: KView<*>, D> T.grid(prop: KProperty<List<D>>, renderer: GridRenderer<D>): KGrid<D> {
-    return add(KGrid(context, { prop.getter.call() }, renderer)).bindTo(prop)
+fun <T: KView<*>, D> T.grid(bindTo: KProperty<List<D>>, renderer: GridRenderer<D>): KGrid<D> {
+    return add(KGrid(context, { bindTo.getter.call() }, renderer)).bindTo(bindTo)
 }
