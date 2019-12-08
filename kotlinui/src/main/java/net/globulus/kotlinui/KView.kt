@@ -133,6 +133,10 @@ abstract class KView<out V: View>(val context: Context) : Stateful, StatefulProd
     operator fun KView<*>.plus(other: KView<*>) {
         add(other)
     }
+
+    operator fun KView<*>.unaryPlus(): KView<*> {
+        return this@KView.add(this@unaryPlus)
+    }
 }
 
 fun Activity.setContentView(context: Context, block: KView<View>.() -> KView<View>) {
