@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
 //                b!!.baseline alignsWith a!!.baseline
 //            )
             toolbarColumn {
-                this + CounterView(context, statefulTest)
+                +CounterView(context, statefulTest)
                 +InfixTest(context, statefulTest)
 
 //                fab {
@@ -82,7 +82,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     class StatefulTest : StatefulProducer {
-        var counter: Int by state(0)
+        var counter by state(0) {
+            Log.e("AAAA", "Updated counter $it")
+        }
         var input: String by state("")
 
         override val stateful = Stateful.default {
@@ -120,6 +122,9 @@ class MainActivity : AppCompatActivity() {
                 statefulTest.counter += 1
             }.widthWrapContent()
              .bindTo(::buttonVisible updates KButton::visible)
+            val emptyState = column {
+                text(R.string.empty)
+            }
             list(listOf(1, 2, 3, 4)) {
                 if (evenOnly && it % 2 == 1) {
                     emptyView()
@@ -127,6 +132,7 @@ class MainActivity : AppCompatActivity() {
                     text("$it")
                 }
             }.bindTo(::evenOnly)
+                .whenEmptyShow(emptyState)
         }.padding(10)
 
         init {

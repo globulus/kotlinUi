@@ -1,6 +1,7 @@
 package net.globulus.kotlinui.widgets
 
 import android.content.Context
+import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -13,10 +14,10 @@ import net.globulus.kotlinui.traits.Data
 import net.globulus.kotlinui.traits.DataProducer
 import kotlin.reflect.KProperty
 
-typealias ListRenderer<D> = KView<RecyclerView>.(D) -> KView<*>
+typealias ListRenderer<D> = KView<RecyclerViewEmptySupport>.(D) -> KView<*>
 typealias RowProducer<D> = () -> KList.Row<D>
 
-class KList<D>(context: Context, private val dataProducer: DataProducer<D>) : KView<RecyclerView>(context) {
+class KList<D>(context: Context, private val dataProducer: DataProducer<D>) : KView<RecyclerViewEmptySupport>(context) {
 
     private var data = dataProducer()
 
@@ -63,7 +64,7 @@ class KList<D>(context: Context, private val dataProducer: DataProducer<D>) : KV
         }
     }
 
-    override val view = RecyclerView(context).apply {
+    override val view = RecyclerViewEmptySupport(context).apply {
         layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         layoutManager = LinearLayoutManager(context)
     }
@@ -71,6 +72,12 @@ class KList<D>(context: Context, private val dataProducer: DataProducer<D>) : KV
     override fun <R> updateValue(r: R) {
         data = dataProducer()
         view.adapter?.notifyDataSetChanged()
+        view.emptyObserver.onChanged()
+    }
+
+    fun whenEmptyShow(kView: KView<*>) {
+        view.emptyView = kView.view
+        view.emptyObserver.onChanged()
     }
 
     class ViewHolder(itemView: View, internal vararg val args: Any) : RecyclerView.ViewHolder(itemView)
@@ -99,4 +106,32 @@ fun <T: KView<*>, D> T.recycledList(data: Data<D>, rowProducer: RowProducer<D>) 
 
 fun <T: KView<*>, D> T.recycledList(bindTo: KProperty<List<D>>, rowProducer: RowProducer<D>): KList<D> {
     return add(KList(context, { bindTo.getter.call() }, rowProducer)).bindTo(bindTo)
+}
+
+class RecyclerViewEmptySupport @JvmOverloads constructor(
+    context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
+) : RecyclerView(context, attrs, defStyleAttr) {
+
+    var emptyView: View? = null
+
+    internal val emptyObserver: AdapterDataObserver = object : AdapterDataObserver() {
+        override fun onChanged() {
+            val adapter = adapter
+            if (adapter != null && emptyView != null) {
+                if (adapter.itemCount == 0) {
+                    emptyView!!.visibility = View.VISIBLE
+                    this@RecyclerViewEmptySupport.visibility = View.GONE
+                } else {
+                    emptyView!!.visibility = View.GONE
+                    this@RecyclerViewEmptySupport.visibility = View.VISIBLE
+                }
+            }
+        }
+    }
+
+    override fun setAdapter(adapter: Adapter<*>?) {
+        super.setAdapter(adapter)
+        adapter?.registerAdapterDataObserver(emptyObserver)
+        emptyObserver.onChanged()
+    }
 }
