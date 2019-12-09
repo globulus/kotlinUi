@@ -42,6 +42,9 @@ abstract class KLinearLayout<T: KLinearLayout<T>> internal constructor(
 
 class Column(context: Context, gravity: Int, invokeBlockNow: Boolean, block: Column.() -> Unit)
     : KLinearLayout<Column>(context, LinearLayout.VERTICAL, gravity, invokeBlockNow, block) {
+
+    constructor(context: Context, gravity: Int, block: Column.() -> Unit) : this(context, gravity, true, block)
+
     override fun invokeBlock() {
         block()
     }
@@ -49,6 +52,9 @@ class Column(context: Context, gravity: Int, invokeBlockNow: Boolean, block: Col
 
 class Row(context: Context, gravity: Int, invokeBlockNow: Boolean, block: Row.() -> Unit)
     : KLinearLayout<Row>(context, LinearLayout.HORIZONTAL, gravity, invokeBlockNow, block) {
+
+    constructor(context: Context, gravity: Int, block: Row.() -> Unit) : this(context, gravity, true, block)
+
     override fun invokeBlock() {
         block()
     }

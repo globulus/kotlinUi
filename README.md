@@ -75,7 +75,7 @@ Method *bindTo* is used to bind a __KView__ to a __property__, so that the KView
 
 ```kotlin
 class MyView(context: Context) : KViewBox(context) {
-    var labelText: String? by state()
+    var labelText: String by state("")
     
     ...
     text(R.string.initial_text).bindTo(::labelText)
@@ -91,6 +91,7 @@ Notice the **::** before the property name - this is Kotlin's way of saying that
 Properties that KViews are bound to **must be delegated through the State class**. The easiest way to do so it by using the *state* method, available to all KViews and KViewBoxes.
 * If the *state* method is invoked without arguments, the property is assumed to be nullable and its default value is null.
 * You must pass an initial value (e.g,, *state("Something")*) for non-null properties.
+* If your state var is nullable, use *optionalState()* instead.
 
 Now, when the prop is updated:
 ```kotlin
@@ -103,6 +104,14 @@ The *bindTo* method can take any number of properties, and the calling KView wil
 
 ```kotlin
 text("").bindTo(::someProp, ::otherProp)
+```
+
+You can also pass a supplementary setter block to a *State* delegated property, that will be invoked after its value is set and bound KViews notified. Here's an example of when this might come in handy:
+
+```kotlin
+var sendNotification by state(false) {
+  EasyPrefs.putSendNotification(context, it)
+}
 ```
 
 ##### Binding methods
@@ -486,6 +495,15 @@ class LandmarkRow(context: Context, private val landmark: Landmark) : KView<View
 }
 ```
 
+You can bind another KView in the same layout as the KList's empty view using *whenEmptyShow*. Note that the empty view must be added to the same layout before the list.
+
+```kotlin
+val listEmptyView = text("The list is empty!")
+list(::items) {
+  text("$it")
+}.whenEmptyShow(listEmptyView)
+```
+
 ##### KGrid
 
 A KGrid is essentially the same as a KList, except it wraps a GridView. The logic and usage is exactly the same, though: pass a list of data, and provide a view renderer.
@@ -511,7 +529,7 @@ materialTextField { textField(::name) }
 ```
 
 ### Tabs
-
+``
 KTabs is a superwidget that allows for KotlinUi implementation of a tabbed view pager, complete with AppBarLayout and underlying fragments.
 
 An AppCompatActivity can use the *setContentTabs* method to implement a KTabs interface. Provided parameters are titles for the tabs, a list of page models, and a renderer for each model:

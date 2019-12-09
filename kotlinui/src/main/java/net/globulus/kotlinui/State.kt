@@ -61,7 +61,13 @@ interface StatefulProducer {
     val stateful: Stateful?
 }
 
-interface State<R: StatefulProducer, T> : ReadWriteProperty<R, T>, UpdatesObservable<R, T> {
+interface AllowsSupplementarySet<T> {
+    val supplementarySet: ((T) -> Unit)?
+}
+
+interface State<R: StatefulProducer, T> : ReadWriteProperty<R, T>,
+    UpdatesObservable<R, T>, AllowsSupplementarySet<T> {
+
     data class Observable<T>(
             val behaviorSubject: BehaviorSubject<T>,
             var bound: Boolean = false
@@ -80,7 +86,10 @@ interface State<R: StatefulProducer, T> : ReadWriteProperty<R, T>, UpdatesObserv
     }
 }
 
-class NullableState<R: StatefulProducer, T>(override val producer: R) : State<R, T?> {
+class NullableState<R: StatefulProducer, T>(
+    override val producer: R,
+    override val supplementarySet: ((T?) -> Unit)? = null
+) : State<R, T?> {
     private var field: T? = null
     override var updatedObservable = false
 
@@ -93,14 +102,21 @@ class NullableState<R: StatefulProducer, T>(override val producer: R) : State<R,
         updateObservable(property)
         field = value
         triggerObserver(property, value)
+        supplementarySet?.invoke(value)
     }
 }
 
-class NonNullState<R: StatefulProducer, T: Any>(override val producer: R) : State<R, T> {
+class NonNullState<R: StatefulProducer, T: Any>(
+    override val producer: R,
+    override val supplementarySet: ((T) -> Unit)? = null
+) : State<R, T> {
     private lateinit var field: T
     override var updatedObservable = false
 
-    constructor(producer: R, initialValue: T) : this(producer) {
+    constructor(producer: R,
+                initialValue: T,
+                supplementarySet: ((T) -> Unit)? = null
+    ) : this(producer, supplementarySet) {
         field = initialValue
     }
 
@@ -113,6 +129,7 @@ class NonNullState<R: StatefulProducer, T: Any>(override val producer: R) : Stat
         updateObservable(property)
         field = value
         triggerObserver(property, value)
+        supplementarySet?.invoke(value)
     }
 }
 
@@ -134,9 +151,12 @@ interface UpdatesObservable<R: StatefulProducer, T> {
     }
 }
 
-fun <R: StatefulProducer, T: Any> R.state() = NonNullState<R, T>(this)
-fun <R: StatefulProducer, T: Any> R.state(initialValue: T) = NonNullState(this, initialValue)
-fun <R: StatefulProducer, T> R.optionalState() = NullableState<R, T>(this)
+fun <R: StatefulProducer, T: Any> R.state(supplementarySet: ((T) -> Unit)? = null)
+    = NonNullState(this, supplementarySet)
+fun <R: StatefulProducer, T: Any> R.state(initialValue: T, supplementarySet: ((T) -> Unit)? = null)
+    = NonNullState(this, initialValue, supplementarySet)
+fun <R: StatefulProducer, T> R.optionalState(supplementarySet: ((T?) -> Unit)? = null)
+    = NullableState<R, T>(this, supplementarySet)
 
 internal fun <P: StatefulProducer, T: Stateful, R> T.bindTo(
         root: P,
